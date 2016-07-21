@@ -2,32 +2,67 @@
 #Separating data into:
 #'komisje' data table <- all local commissions info columns and collective party scores ('Razem...' columns)
 #'wyniki' data table <- basic commissions info and every observation (scores of every single candidate for every single commission)
+#'kandydaci' data table <- info from additional .xls file
+#'okregi' data table <- election districts info from PKW's website
 
 require(dplyr)
 require(tidyr)
-require(XLConnect)
 require(DBI)
 require(RSQLite)
+require(XML)
+
+source("utils.R")
+
 
 #variables
-year <- 2015
-path <- "/home/ev/wybory/raw_data/wyniki/"
-liczbaOkregow <- 41
+path <- "/home/ev/wybory/raw_data/wyniki/2015/"
+number_of_datasets <- 41                                #number of election districts
+kandydaci_filename <-"kandsejm2015-10-19-10-00.xls"
+database_name <- "wyniki2015"                           #name for created .sqlite3 file
+
 
 #connect to SQLite
-con <- dbConnect(SQLite(), paste0("wyniki", year, ".sqlite3", collapse=''))
+con <- dbConnect(SQLite(), paste0(database_name, ".sqlite3", collapse=''))
 
-#looping through all the .xls files
-for (i in 1:liczbaOkregow) {
+#*************************************************************************
+
+#get election district data
+okregi <- readHTMLTable(doc="http://parlament2015.pkw.gov.pl/355_Wyniki_Sejm_XLS", header = TRUE)
+okregi <- okregi[[1]] %>%
+  select(-Plik)
+
+#export data to SQLite database
+dbWriteTable(con, name="okregi", val=okregi)
+rm(okregi)
+
+cat("Finished processing district data.\n\n")
+
+#*************************************************************************
+
+#get candidates data
+kand_data <- get_xls_data(paste0(path, kandydaci_filename, collapse=''))
+
+#export data to SQLite database
+dbWriteTable(con, name="kandydaci", val=kand_data)
+rm(kand_data)
+
+cat("Finished processing candidates data.\n\n")
+
+#*******************************************************************
+
+#process the rest of the files (results from all election districts)
+
+for (i in 1:number_of_datasets) {
   
-  #get double digit number
-  if (i<10)
-    i<-paste0("0", i, collapse='')
+  #get double digit number e.g. 01 instead of 1
+  if (i<10) {
+    i_string<-paste0("0", i, collapse='')
+  } else {
+    i_string<-paste0(i)
+  }
   
-  #get data from file into 'temp' variable
-  wb <- loadWorkbook(paste0(path, year, "/", i, ".xlsx", collapse=''))
-  temp <- readWorksheet(wb, sheet=1, header=T)
-  rm(wb)
+  #get data from file
+  temp <- get_xls_data(paste0(path, i_string, ".xlsx", collapse=''))
  
   #find the indices of some unnecessary irregular columns
   indeksy <- vector()
@@ -66,19 +101,23 @@ for (i in 1:liczbaOkregow) {
   #gather into long data form
   wyniki <- wyniki %>% gather(Kandydat, Wynik, 6:ncol(wyniki))
   
-  #split names into 'name' and 'surname' columns (assuming candidates have at most 3 first names - a warning will pop up otherwise)
-  wyniki <- wyniki %>% separate(into=c("a", "b", "c", "Nazwisko"), sep="\\.", col=Kandydat, remove = TRUE, fill = "left")
-  wyniki <- wyniki %>% unite (col="Imiona", a, b, c, sep=" ")
-  wyniki$Imiona <- gsub("NA ", "", wyniki$Imiona)
+  #split names into 'name' and 'surname' columns
+  #TO DO
 
+  #add 'district' data column
+  wyniki$Nr.okr. <- i
+  komisje$Nr.okr. <- i
+    
   #export data to SQLite database
-  dbWriteTable(con, name=paste0("wyniki", i, collapse=''), val=wyniki)
-  dbWriteTable(con, name=paste0("komisje", i, collapse=''), val=komisje)
+  dbWriteTable(con, name="wyniki", val=wyniki, append=T)
+  dbWriteTable(con, name=paste0("komisje", i_string, collapse=''), val=komisje)
 
   #clean up
   rm(wyniki)
   rm(komisje)
   gc()
   
-  cat("Finished processing file: ", i, "/", liczbaOkregow, "\n")
+  cat("Finished processing file: ", i, "/", number_of_datasets, "\n")
 }
+
+dbDisconnect(con)
