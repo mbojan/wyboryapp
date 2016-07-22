@@ -64,20 +64,17 @@ for (i in 1:number_of_datasets) {
   #get data from file
   temp <- get_xls_data(paste0(path, i_string, ".xlsx", collapse=''))
  
-  #find the indices of some unnecessary irregular columns
-  indeksy <- vector()
-  #we need to find the one column after all "Sejm..." columns
-  #and then every next column after 'Razem...' column (except the last one)
-    
+  #find the indices of colums that don't contain candidates surnames
+  #note: first 28 columns and the last column always contain other data in the 2015 files
+  
+  non_cand <- c(1:28, ncol(temp))
+
   for (j in 1:(ncol(temp)-1)) {
-    if (names(temp[j]) %>% startsWith('Sejm.')){
-      indeksy <- j+1
-    }
     if (names(temp[j]) %>% startsWith('Razem.')){
-      indeksy <- c(indeksy, j+1)
+      non_cand <- c(non_cand, j, j+1)
     }
   }
-   
+  
   #sort the data
   komisje <- temp %>%
       select( Nazwa.komisji,
@@ -89,21 +86,33 @@ for (i in 1:number_of_datasets) {
               starts_with('Razem.')
       )
   
-  wyniki <- temp %>%
-    #watch out for the order! this works only if 'indeksy' comes first
-      select( -indeksy,
-              -starts_with('Sejm.'),
-              -starts_with('Razem.')
-      )
+  wyniki <- cbind(
+    select(temp, 1:5),
+    select(temp, -non_cand)
+  )
   
   rm(temp)
  
   #gather into long data form
   wyniki <- wyniki %>% gather(Kandydat, Wynik, 6:ncol(wyniki))
   
-  #split names into 'name' and 'surname' columns
-  #TO DO
-
+  #fix corrupted names (restore them from .xls column names) and split into 'name' and 'surname' columns
+  nazwiska <- get_xls_data(paste0(path, i_string, ".xlsx", collapse=''), is_head=FALSE)
+  nazwiska <- nazwiska[1,-non_cand]
+  
+  ktora_osoba <- 1
+  for (j in 1:nrow(wyniki)){
+    nazw <- nazwiska[ktora_osoba]
+    
+    if (j!=nrow(wyniki)){
+      if (wyniki[j, 6]!=wyniki[j+1, 6]){
+        ktora_osoba <= ktora_osoba+1
+      }
+    }  
+    
+    wyniki[j, 6] <- nazw
+  }
+  
   #add 'district' data column
   wyniki$Nr.okr. <- i
   komisje$Nr.okr. <- i

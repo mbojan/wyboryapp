@@ -1,9 +1,9 @@
 require(XLConnect)
 
-get_xls_data <- function(file_path){
+get_xls_data <- function(file_path, is_head=TRUE){
   
   wb <- loadWorkbook(file_path)
-  dataset <- readWorksheet(wb, sheet=1, header=T)
+  dataset <- readWorksheet(wb, sheet=1, header=is_head)
   rm(wb)
   
   return(dataset)
