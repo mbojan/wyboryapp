@@ -4,8 +4,6 @@
 #none of these pairs occur in the same precinct
 #thus: we can safely identify a person by a combination of 'Name', 'Surname' and election district number
 
-#uploading this anyway in case it's useful later on
-
 source("utils.R")
 
 require(dplyr)
@@ -17,31 +15,20 @@ kandydaci <- get_xls_data(path) %>%
 
 #clean irregular characters just in case
 kandydaci$Nazwisko <- rmv_polish_char(kandydaci$Nazwisko)
-
 kandydaci$Nazwisko <- gsub(pattern="\\.", replacement=" ", kandydaci$Nazwisko, fixed=FALSE)
 kandydaci$Nazwisko <- gsub(pattern="-", replacement=" ", kandydaci$Nazwisko, fixed=FALSE)
 
-#get list of surnames that occur more than once and drop the rest
-ile <- count(kandydaci, Nazwisko)
-ile <- filter(ile, n!=1)
-kandydaci <- kandydaci[(kandydaci$Nazwisko %in% ile$Nazwisko),]
+dup <- kandydaci %>%
+  select(Imiona, Nazwisko) %>%
+  duplicated()
 
-#for every repeated surname, filter all occurences and check if the names match there as well
-duplikaty <- data.frame()
+dup2 <- kandydaci[nrow(kandydaci):1,] %>%
+  select(Imiona, Nazwisko) %>%
+  duplicated()
 
-for (i in 1:nrow(ile)){
-  temp <- filter(kandydaci, toString(ile[i, 1]) == Nazwisko)
-  if (anyDuplicated(temp$Imiona)){
-    ileimion <- count(temp, Imiona)
-    ileimion <- filter(ileimion, n!=1)
-    print(ileimion) #DEBUG!
-    print(temp[1,5]) #DEBUG!
-    for (j in 1:nrow(ileimion)){
-      temp2 <- filter(temp, toString(ileimion[j, 1]) == Imiona)
-      duplikaty <- rbind(duplikaty, temp2)
-    }
-    rm(temp2)
-    rm(ileimion)
-  }
-  rm(temp)
-}
+duplikaty <- rbind(
+  kandydaci %>%
+      filter(dup),
+  kandydaci[nrow(kandydaci):1,] %>%
+      filter(dup2)
+)
