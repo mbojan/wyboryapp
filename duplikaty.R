@@ -6,11 +6,12 @@
 
 source("utils.R")
 
+require(XLConnect)
 require(dplyr)
 
 path <- "/home/ev/wybory/raw_data/wyniki/2015/kandsejm2015-10-19-10-00.xls"
 
-kandydaci <- get_xls_data(path) %>%
+kandydaci <- XLConnect::readWorksheetFromFile(path, sheet=1, header=TRUE) %>%
   select(-Zawód, -Płeć, -Miejsce.zam., -Należy.do.partii.politycznej)
 
 #clean irregular characters just in case
@@ -18,14 +19,17 @@ kandydaci$Nazwisko <- rmv_polish_char(kandydaci$Nazwisko)
 kandydaci$Nazwisko <- gsub(pattern="\\.", replacement=" ", kandydaci$Nazwisko, fixed=FALSE)
 kandydaci$Nazwisko <- gsub(pattern="-", replacement=" ", kandydaci$Nazwisko, fixed=FALSE)
 
+#finds all values that already ocurred, from beginning to end
 dup <- kandydaci %>%
   select(Imiona, Nazwisko) %>%
   duplicated()
 
+#now find the repeated values from end to beginning, to get the first ocurrences
 dup2 <- kandydaci[nrow(kandydaci):1,] %>%
   select(Imiona, Nazwisko) %>%
   duplicated()
 
+#list all duplicates
 duplikaty <- rbind(
   kandydaci %>%
       filter(dup),
