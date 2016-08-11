@@ -1,3 +1,5 @@
+library(dplyr)
+
 rmv_polish_char <- function(dataset){
   
   dataset<- toupper(dataset)
@@ -21,4 +23,26 @@ rmv_polish_char <- function(dataset){
   dataset<- gsub(pattern="Ó", replacement="O", dataset, fixed=FALSE)
   
   return(dataset)
+}
+
+find_duplicated <- function(data, columns){
+  
+  dup <- data %>%
+    select(columns) %>%
+    duplicated()
+  
+  dup2 <- data[nrow(data):1,] %>%
+    select(columns) %>%
+    duplicated()
+  
+  found <- rbind(
+    data %>%
+      filter(dup),
+    data[nrow(data):1,] %>%
+      filter(dup2)
+  )
+  
+  rm(dup, dup2)
+  
+  return(found)
 }
