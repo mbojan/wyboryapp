@@ -12,6 +12,7 @@ get_maps <- function(path){
   download.file("ftp://91.223.135.109/prg/jednostki_administracyjne.zip", #URL works as of 10 Aug 2016
                 destfile = temp)
   
+  Sys.setlocale('LC_ALL','C') 
   unzip(temp, exdir=path, junkpaths = TRUE)
   file.remove(temp)
   
@@ -22,15 +23,11 @@ get_maps <- function(path){
     if (grepl(pattern="obreby", i)){
       file.remove(i)
     }
-    if (grepl(pattern="\344", i)){
-      file.rename(i, gsub(
-        pattern="P", replacement="p", gsub(
-        pattern="\344", replacement="n", i
-        )))
+    if (grepl(pattern="Pa.+stwo", i)){
+      file.rename(i, gsub(pattern="Pa.+stwo", replacement = "panstwo", i))
     }
-    if (grepl(pattern="\242", i)){
-      file.rename(i, gsub(
-        pattern="\242", replacement="o", i))
+    if (grepl(pattern="wojew.+twa", i)){
+      file.rename(i, gsub(pattern="wojew.+twa", replacement = "wojewodztwa", i))
     }
   }
   
@@ -47,13 +44,14 @@ load_map <- function(name, path){
   map@data <- map@data[, c(5, 6, 16)]
   names(map@data) <- c("code", "name", "area")
   
-  if (any(duplicated(map@data$code))){
-    warning("duplicates found!\n",
-            print(find_duplicated(map@data, columns=1)))
-  }
-  
   if (name != "wojewodztwa" && name != "panstwo"){             #area data available only for these two
       map@data <- map@data[, -3]    
+  }
+  
+  if (any(duplicated(map@data$code))){
+    warning("Duplicated entries found in ", name, ".shp!")
+    cat("Following duplicates found in ", name, ".shp:\n")
+    print(find_duplicated(map@data, columns=1))
   }
   
   if (name == "gminy"){
@@ -68,22 +66,40 @@ load_map <- function(name, path){
   
   return(map)
 }
+
 #************************************************************
 
+temppath = tempdir()
 
-path="./test"
+get_maps(temppath)                                            #TO DO: unzip has problems with encoding - does it affect the file contents? also, will this work on windows?
 
-#get_maps(path) #TO DO: locale/encoding for unzip? will the whole thing work on windows?
+dir.create("./visual/data/maps", recursive=TRUE)
 
-woj <- load_map(name="wojewodztwa", path)
+load_map(name="wojewodztwa", temppath) %>%
+        ms_simplify(keep=0.01) %>%
+        saveRDS("./visual/data/maps/woj.rds")
 
-gminy <- load_map(name="gminy", path)
+load_map(name="powiaty", temppath) %>%                        # TO DO: test different 'keep' values and whether all polygons are still there after simplifying
+        ms_simplify(keep=0.01) %>%                            # for wojewodztwa.shp Hel Peninsula disappears around keep=0.006
+        saveRDS("./visual/data/maps/powiaty.rds")
 
-powiaty <- load_map(name="powiaty", path)
+load_map(name="panstwo", temppath) %>%
+        ms_simplify(keep=0.01) %>%
+        saveRDS("./visual/data/maps/panstwo.rds")
 
-panstwo <- load_map(name="panstwo", path)
+gminy <- load_map(name="gminy", temppath) %>%                 # TO DO: there seem to be a few duplicated entries in the gminy.shp file
+        ms_simplify(keep=0.01)
 
-miasta <- load_map(name="jednostki_ewidencyjne", path)
-miasta <- miasta[!(miasta$TERYT %in% gminy$TERYT),]
+saveRDS(gminy, "./visual/data/maps/gminy.rds")
 
-#gminy2 <- ms_simplify(gminy, keep=0.005) #0.006 is the least possible value for wojewodztwa.shp, below it Hel Penisula disappears
+miasta <- load_map(name="jednostki_ewidencyjne", temppath)
+miasta <- miasta[!(miasta$TERYT %in% gminy$TERYT),] %>%
+        ms_simplify(keep=0.01)
+
+rm(gminy)
+        
+miasta %>%
+	subset(type==8) %>%
+	saveRDS("./visual/data/maps/warszawa.rds")
+
+unlink(temppath)
