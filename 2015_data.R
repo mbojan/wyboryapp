@@ -62,6 +62,10 @@ process_file_2015 <- function(file, con, file_no){
   
   #change type to integer wherever it's needed
   for (j in c(sejm_columns, Razem_columns)){
+    if (length(unique(unsorted_data[ ,j]))==1 && unique(unsorted_data[ ,j])[1]=="XXXXX"){
+      cat("District: ", file_no, ", disqualified party found: ", colnames(unsorted_data)[j], "\n")
+      unsorted_data[ ,j] <- NA
+    }
     unsorted_data[ ,j] <-  unsorted_data[ ,j] %>% as.integer()
   }
   unsorted_data$Numer.obwodu <- as.integer(unsorted_data$Numer.obwodu)
@@ -81,7 +85,19 @@ process_file_2015 <- function(file, con, file_no){
     fix_corrupted_surnames(unsorted_data, surname_columns, file)
   
   #replace "XXXXX" values (null score values of candidates who ended up not participating) with NAs
-  wyniki$Wynik[wyniki$Wynik=="XXXXX"] <- NA
+  if ("XXXXX" %in% wyniki$Wynik) {
+    disqualified <- wyniki %>%
+      select(Wynik, Kandydat) %>%
+      filter(Wynik=="XXXXX") %>%
+      unique() %>%
+      select(Kandydat)
+    
+    wyniki$Wynik[wyniki$Kandydat %in% disqualified[[1]]] <- NA
+    
+    for (j in disqualified[[1]]){
+      cat("District: ", file_no, ", disqualified candidate found: ", j, "\n")
+    }
+  }
   wyniki$Wynik <- as.integer(wyniki$Wynik)
   
   #export data to SQLite database
