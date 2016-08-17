@@ -14,6 +14,20 @@ library(XML)
 
 #************************************************************
 
+format_columns <- function(dataset, columns, file_no){
+  
+  for (j in columns){
+    if (length(unique(dataset[ ,j]))==1 && unique(dataset[ ,j])[1]=="XXXXX"){
+      cat("District: ", file_no, ", disqualified/revoked: ", colnames(dataset)[j], "\n", sep="")
+      dataset[ ,j] <- NA
+    }
+    dataset[ ,j] <-  dataset[ ,j] %>% as.integer()
+  }
+  return(dataset)
+}
+
+#************************************************************
+
 fix_corrupted_surnames <- function(data_to_fix, data_for_reference, surnames_cols, file){
 
   corrupted <- data.frame(colnames(data_for_reference)[surnames_cols])
@@ -37,6 +51,29 @@ fix_corrupted_surnames <- function(data_to_fix, data_for_reference, surnames_col
 
 #************************************************************
 
+write_into_db <- function(wyniki, komisje, file_no, con){
+  
+  dbWriteTable(con, name="wyniki", val=wyniki, append=T)
+  
+  if (file_no==1){
+    dbWriteTable(con, name="komisje", val=komisje)
+  } else {
+    dbWriteTable(con, name="temp_mini", val=komisje)
+    dbSendQuery(con, "CREATE TABLE temp_all AS
+                        SELECT * FROM komisje
+                        NATURAL LEFT OUTER JOIN temp_mini
+                        UNION
+                        SELECT * FROM temp_mini
+                        NATURAL LEFT OUTER JOIN komisje;")
+    dbSendQuery(con, "DROP TABLE temp_mini;")
+    dbSendQuery(con, "DROP TABLE komisje;")
+    dbSendQuery(con, "ALTER TABLE temp_all 
+                        RENAME TO komisje;")
+  }
+}
+
+#************************************************************
+
 process_file_2015 <- function(file, con, file_no){
   
   unsorted_data <- openxlsx::read.xlsx(file, sheet=1)
@@ -47,63 +84,33 @@ process_file_2015 <- function(file, con, file_no){
   unsorted_data$Nr.okr. <- file_no
   
   #segregate all columns basing on their type
-  sejm_columns <- (1:ncol(unsorted_data))[colnames(unsorted_data) %>% startsWith('Sejm.')]
-  Razem_columns <- (1:ncol(unsorted_data))[colnames(unsorted_data) %>% startsWith('Razem.')]
+  sejm_columns <- which(colnames(unsorted_data) %>% startsWith('Sejm.'))
+  Razem_columns <- which(colnames(unsorted_data) %>% startsWith('Razem.'))
   KW_columns <- c(last(sejm_columns)+1, Razem_columns[1:(length(Razem_columns)-1)] + 1)
-  info_columns <- (1:ncol(unsorted_data))[colnames(unsorted_data) %in% c("Nazwa.komisji",
-                                                                        "Symbol.kontrolny",
-                                                                        "Gmina",
-                                                                        "TERYT.gminy",
-                                                                        "Kod.wojewodztwo",
-                                                                        "Kod.powiat",
-                                                                        "Numer.obwodu",
-                                                                        "Nr.okr.")]
-  surname_columns <- (1:ncol(unsorted_data))[!1:ncol(unsorted_data) %in% c(Razem_columns, sejm_columns, info_columns, KW_columns)]
+  info_columns <- which(colnames(unsorted_data) %in% c("Nazwa.komisji", "Symbol.kontrolny",
+                                                      "Gmina", "TERYT.gminy",
+                                                      "Kod.wojewodztwo", "Kod.powiat",
+                                                      "Numer.obwodu", "Nr.okr."))
+  surname_columns <- which(!1:ncol(unsorted_data) %in% c(Razem_columns, sejm_columns, info_columns, KW_columns))
   
-  #change type to integer wherever it's needed
-  for (j in c(sejm_columns, Razem_columns)){
-    if (length(unique(unsorted_data[ ,j]))==1 && unique(unsorted_data[ ,j])[1]=="XXXXX"){
-      cat("District: ", file_no, ", disqualified party found: ", colnames(unsorted_data)[j], "\n")
-      unsorted_data[ ,j] <- NA
-    }
-    unsorted_data[ ,j] <-  unsorted_data[ ,j] %>% as.integer()
-  }
-  unsorted_data$Numer.obwodu <- as.integer(unsorted_data$Numer.obwodu)
-
+  #format numeric columns - set type to integer and change disqualified parties/candidates results from "XXXXX" to NA
+  unsorted_data <- unsorted_data %>%
+        format_columns(c(Razem_columns, sejm_columns, 
+                         surname_columns, which(colnames(unsorted_data)=="Numer.obwodu")),
+                      file_no)
+  
   #segregate data into relevant tables  
   komisje <- unsorted_data %>%
-        select(info_columns, sejm_columns)
-  
-  komisje_KW <- unsorted_data %>%
-        select(Symbol.kontrolny, Razem_columns)
+        select(info_columns, sejm_columns, Razem_columns)
 
   wyniki <- unsorted_data %>%
-    select(info_columns, surname_columns)
-  
+        select(info_columns, surname_columns)
   wyniki <- wyniki %>%
-    gather(Kandydat, Wynik, (length(info_columns)+1):ncol(wyniki)) %>%
-    fix_corrupted_surnames(unsorted_data, surname_columns, file)
-  
-  #replace "XXXXX" values (null score values of candidates who ended up not participating) with NAs
-  if ("XXXXX" %in% wyniki$Wynik) {
-    disqualified <- wyniki %>%
-      select(Wynik, Kandydat) %>%
-      filter(Wynik=="XXXXX") %>%
-      unique() %>%
-      select(Kandydat)
-    
-    wyniki$Wynik[wyniki$Kandydat %in% disqualified[[1]]] <- NA
-    
-    for (j in disqualified[[1]]){
-      cat("District: ", file_no, ", disqualified candidate found: ", j, "\n")
-    }
-  }
-  wyniki$Wynik <- as.integer(wyniki$Wynik)
+        gather(Kandydat, Wynik, (length(info_columns)+1):ncol(wyniki)) %>%
+        fix_corrupted_surnames(unsorted_data, surname_columns, file)
   
   #export data to SQLite database
-  dbWriteTable(con, name="wyniki", val=wyniki, append=T)
-  dbWriteTable(con, name="komisje", val=komisje, append=T)
-  dbWriteTable(con, name=paste0("komisje_KW", file_no, collapse=''), val=komisje_KW) #to be merged with 'komisje' table after loading all files
+  write_into_db(wyniki, komisje, file_no, con)
 }
 
 #************************************************************
@@ -151,7 +158,6 @@ set_up_data_2015 <- function(dbpath){
   con <- dbConnect(SQLite(), dbpath)
   
   for (i in 1:41) {
-    
     temp <- tempfile()
     
     #for files 1 to 9 there is an additional '0' in the URL (01, 02 etc)
@@ -164,22 +170,19 @@ set_up_data_2015 <- function(dbpath){
     }
     
     process_file_2015(temp, con, i) #separates data from file into two tables and writes them into the db
+  
     file.remove(temp)
-    
-    cat("Finished processing election results file: ", i, "/41\n")
+    cat("Finished processing election results file: ", i, "/41\n", sep="")
   }
   
   temp <- tempfile()
   download.file("http://parlament2015.pkw.gov.pl/kandydaci.zip",
                 destfile = temp)
-  
   process_cand_file_2015(con, temp) #exports the data into the db
   file.remove(temp)
   
   get_district_info_2015(con)
   
   cat("Finished processing all 2015 files\n")
-  
   dbDisconnect(con)
 }
-
