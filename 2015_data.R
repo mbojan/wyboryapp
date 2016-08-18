@@ -4,6 +4,7 @@
 #   2) one .xls file with additional candidates data
 #   3) one html table with election districts boundaries info
 
+library(plyr)
 library(dplyr)
 library(tidyr)
 library(DBI)
@@ -44,32 +45,9 @@ fix_corrupted_surnames <- function(data_to_fix, data_for_reference, surnames_col
   #merge tables with corrupted and uncorrupted names and remove the corrupted version
   data_to_fix <- merge(data_to_fix, surnames, all.x=TRUE, by.x="Kandydat", by.y="corrupted")
   data_to_fix <- select(data_to_fix, -Kandydat)
-  data_to_fix <- rename(data_to_fix, Kandydat=uncorrupted)
+  data_to_fix <- dplyr::rename(data_to_fix, Kandydat=uncorrupted)
   
   return(data_to_fix)
-}
-
-#************************************************************
-
-write_into_db <- function(wyniki, komisje, file_no, con){
-  
-  dbWriteTable(con, name="wyniki", val=wyniki, append=T)
-  
-  if (file_no==1){
-    dbWriteTable(con, name="komisje", val=komisje)
-  } else {
-    dbWriteTable(con, name="temp_mini", val=komisje)
-    dbSendQuery(con, "CREATE TABLE temp_all AS
-                        SELECT * FROM komisje
-                        NATURAL LEFT OUTER JOIN temp_mini
-                        UNION
-                        SELECT * FROM temp_mini
-                        NATURAL LEFT OUTER JOIN komisje;")
-    dbSendQuery(con, "DROP TABLE temp_mini;")
-    dbSendQuery(con, "DROP TABLE komisje;")
-    dbSendQuery(con, "ALTER TABLE temp_all 
-                        RENAME TO komisje;")
-  }
 }
 
 #************************************************************
@@ -110,7 +88,8 @@ process_file_2015 <- function(file, con, file_no){
         fix_corrupted_surnames(unsorted_data, surname_columns, file)
   
   #export data to SQLite database
-  write_into_db(wyniki, komisje, file_no, con)
+  dbWriteTable(con, name="wyniki", val=wyniki, append=T)
+  return(komisje)
 }
 
 #************************************************************
@@ -121,8 +100,8 @@ process_cand_file_2015 <- function(con, zipfile){
   
   unzip(zipfile, files="kandsejm2015-10-19-10-00.xls", exdir=temp_dir)
   
-  wb <- loadWorkbook(paste0(temp_dir, "/kandsejm2015-10-19-10-00.xls", collapse=''))
-  cand_data <- readWorksheet(wb, sheet=1, header=TRUE)
+  wb <- XLConnect::loadWorkbook(paste0(temp_dir, "/kandsejm2015-10-19-10-00.xls", collapse=''))
+  cand_data <- XLConnect::readWorksheet(wb, sheet=1, header=TRUE)
   
   cand_data <- unite(cand_data, col=Kandydat, Imiona, Nazwisko, sep=" ")
   
@@ -157,6 +136,8 @@ set_up_data_2015 <- function(dbpath){
 
   con <- dbConnect(SQLite(), dbpath)
   
+  komisje_wszystkie <- data.frame()
+  
   for (i in 1:41) {
     temp <- tempfile()
     
@@ -169,11 +150,16 @@ set_up_data_2015 <- function(dbpath){
                     destfile = temp)
     }
     
-    process_file_2015(temp, con, i) #separates data from file into two tables and writes them into the db
-  
+    kom <- process_file_2015(temp, con, i) #separates data from file into two tables, writes one into db, returns the other one
+    
+    komisje_wszystkie <- plyr::rbind.fill(komisje_wszystkie, kom)
+    
     file.remove(temp)
     cat("Finished processing election results file: ", i, "/41\n", sep="")
   }
+  
+  dbWriteTable(con, name="komisje", val=komisje_wszystkie)
+  rm(komisje_wszystkie)
   
   temp <- tempfile()
   download.file("http://parlament2015.pkw.gov.pl/kandydaci.zip",
