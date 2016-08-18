@@ -1,24 +1,30 @@
-require(DBI)
-require(RSQLite)
-require(maptools) 
-
+library(DBI)
+library(RSQLite)
+library(sp)
+library(leaflet)
 
 shinyServer(function(input, output) {
   
-  database_name <- "./data/wyniki2015.sqlite3"  
+  con <- dbConnect(SQLite(), "./data/wyniki2015.sqlite3")  
   
-  panstwo <- readShapePoly("./data/adm/Państwo.shp")
-  wojewodztwa <- readShapePoly("./data/adm/województwa.shp")
+  gminy <- readRDS("./data/maps/gminy.rds")
+  warszawa <- readRDS("./data/maps/warszawa.rds")
+  panstwo <- readRDS("./data/maps/panstwo.rds")
+  powiaty <- readRDS("./data/maps/powiaty.rds")
+  wojewodztwa <- readRDS("./data/maps/woj.rds")
   
-  con <- dbConnect(SQLite(), database_name)
+  panstwo <- spTransform(panstwo, CRS("+init=epsg:4326"))
+  wojewodztwa <- spTransform(wojewodztwa, CRS("+init=epsg:4326"))
   
-  TERYT <- c(seq(from=2, to=32, by=2))
+  
+  TERYT <- seq(from=2, to=32, by=2)
+  shades <- colorRampPalette(c("white", "red"))(100)
   
   output$text <- renderText({ 
     paste("You have selected: ", input$wybor)
   })
   
-  output$map <- renderPlot({
+  output$map <- renderPlot({ #wojewodztwa
   
     zmienna <- input$wybor
     wyniki <- vector()
@@ -31,23 +37,21 @@ shinyServer(function(input, output) {
         woj<-paste0(i)
       }
       
-      suma_zmienna <- sum(dbGetQuery(con, paste0("select \"Wartosc\" 
-                                   from komisje 
-                                   where Zmienna=\"", zmienna, "\"  
-                                   AND 
-                                   \"TERYT.Gminy\" LIKE \"", woj, "%\"", collapse = "")))
+      suma_zmienna <- unlist(
+                      dbGetQuery(con, paste0("
+                                  SELECT SUM([", zmienna, "])   
+                                  FROM komisje 
+                                  WHERE [Kod.wojewodztwo] = '", woj, "'", collapse = "")
+                      ))
       
-      suma_lacznie <- sum(dbGetQuery(con, paste0("select \"Wartosc\"
-                                         from komisje
-                                         where Zmienna=\"Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów\"
-                                         AND
-                                         \"TERYT.Gminy\" LIKE \"", woj, "%\"", collapse = "")))
-      
-      #suma_lacznie should not update each time - temp solution
+      suma_lacznie <- unlist(
+                      dbGetQuery(con, paste0("
+                                  SELECT SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów])
+                                  FROM komisje
+                                  WHERE[Kod.wojewodztwo] = '", woj, "'", collapse = "")
+                      ))
       
       wyniki <- append(wyniki, suma_zmienna/suma_lacznie * 100)
-      
-      shades <- colorRampPalette(c("white", "red"))(100)
       fills <- shades[round(wyniki)]
       
       plot(panstwo)
@@ -61,15 +65,19 @@ shinyServer(function(input, output) {
           woj<-paste0(woj)
         }
         
-        test <- subset(wojewodztwa, jpt_kod_je==woj)
+        test <- subset(wojewodztwa, code==woj)
         plot(test, col=fills[i], add=TRUE)
       }
       legend('topright', box.lty=0, bty="n", title=zmienna, legend=round(wyniki,2), fill = fills)
       
     }  
-    
   })
-  
+
+  output$mapa2 <- renderLeaflet({
+    leaflet() %>%
+      addTiles() %>%
+      addPolygons(data=wojewodztwa)
+ })
 })
 
 
