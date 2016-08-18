@@ -38,12 +38,11 @@ shinyUI(fluidPage(
       
         tabPanel("Wojewodztwa",
                 textOutput("text"),
-                plotOutput("map")
+                leafletOutput("mapa")
         ),
         
-        tabPanel("Mapa leaflet",
-                 h6("test_string"),
-                 leafletOutput("mapa2")
+        tabPanel("Temp",
+                 h6("test_string")
               
         )
         
