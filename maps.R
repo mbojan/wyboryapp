@@ -68,38 +68,38 @@ load_map <- function(name, path){
 }
 
 #************************************************************
-
-temppath = tempdir()
-
-get_maps(temppath)                                            #TO DO: unzip has problems with encoding - does it affect the file contents? also, will this work on windows?
-
-dir.create("./visual/data/maps", recursive=TRUE)
-
-load_map(name="wojewodztwa", temppath) %>%
-        ms_simplify(keep=0.01) %>%
-        saveRDS("./visual/data/maps/woj.rds")
-
-load_map(name="powiaty", temppath) %>%                        # TO DO: test different 'keep' values and whether all polygons are still there after simplifying
-        ms_simplify(keep=0.01) %>%                            # for wojewodztwa.shp Hel Peninsula disappears around keep=0.006
-        saveRDS("./visual/data/maps/powiaty.rds")
-
-load_map(name="panstwo", temppath) %>%
-        ms_simplify(keep=0.01) %>%
-        saveRDS("./visual/data/maps/panstwo.rds")
-
-gminy <- load_map(name="gminy", temppath) %>%                 # TO DO: there seem to be a few duplicated entries in the gminy.shp file
-        ms_simplify(keep=0.01)
-
-saveRDS(gminy, "./visual/data/maps/gminy.rds")
-
-miasta <- load_map(name="jednostki_ewidencyjne", temppath)
-miasta <- miasta[!(miasta$TERYT %in% gminy$TERYT),] %>%
-        ms_simplify(keep=0.01)
-
-rm(gminy)
-        
-miasta %>%
-	subset(type==8) %>%
-	saveRDS("./visual/data/maps/warszawa.rds")
-
-unlink(temppath)
+set_up_maps <- function(outputdir){
+  
+  temppath = tempdir()
+  
+  get_maps(temppath)                                            #TO DO: unzip has problems with encoding - does it affect the file contents? also, will this work on windows?
+  
+  load_map(name="wojewodztwa", temppath) %>%
+          ms_simplify(keep=0.01) %>%
+          saveRDS(paste0(outputdir, "/woj.rds", collapse=""))
+  
+  load_map(name="powiaty", temppath) %>%                        # TO DO: test different 'keep' values and whether all polygons are still there after simplifying
+          ms_simplify(keep=0.01) %>%                            # for wojewodztwa.shp Hel Peninsula disappears around keep=0.006
+          saveRDS(paste0(outputdir, "/powiaty.rds", collapse=""))
+  
+  load_map(name="panstwo", temppath) %>%
+          ms_simplify(keep=0.01) %>%
+          saveRDS(paste0(outputdir, "/panstwo.rds", collapse=""))
+  
+  gminy <- load_map(name="gminy", temppath) %>%                 # TO DO: there seem to be a few duplicated entries in the gminy.shp file
+          ms_simplify(keep=0.01)
+  
+  saveRDS(paste0(outputdir, "/gminy.rds", collapse=""))
+  
+  miasta <- load_map(name="jednostki_ewidencyjne", temppath)
+  miasta <- miasta[!(miasta$TERYT %in% gminy$TERYT),] %>%
+          ms_simplify(keep=0.01)
+  
+  rm(gminy)
+          
+  miasta %>%
+  	subset(type==8) %>%                                         #dropping Krakow and Lodz maps
+  	saveRDS(paste0(outputdir, "/warszawa.rds", collapse=""))
+  
+  unlink(temppath)
+}
