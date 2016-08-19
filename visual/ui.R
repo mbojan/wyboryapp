@@ -8,8 +8,9 @@ shinyUI(fluidPage(
     
     sidebarPanel(
       helpText("Wyniki wyborow parlamentarnych 2015."),
+      helpText("UWAGA! Tymczasowo wszystkie wyniki są skalowane, żeby mapa była lepiej widoczna."),
       
-      selectInput("wybor",
+      selectInput("zmienna",
                   label = h6(strong("Wybierz zmienna.")), 
                   choices = list(
                             "Razem.KW.Prawo.i.Sprawiedliwość",                                               
@@ -29,15 +30,28 @@ shinyUI(fluidPage(
                             "Razem.KWW.Obywatele.do.Parlamentu",                                                                                           
                             "Razem.KWW.Mniejszość.Niemiecka",                                                                                              
                             "Razem.KWW.Zjednoczeni.dla.Śląska"
-                            )
-                  )
+                            ),
+                  selected = "Razem.KW.Prawo.i.Sprawiedliwość"
+                  ),
+      
+      selectInput("poziom",
+                  label = h6(strong("Wybierz poziom.")), 
+                  choices = list(
+                    "panstwo",                                               
+                    "wojewodztwa",                                                                                           
+                    "powiaty"
+                    #"gminy"
+                   ),
+                  selected="wojewodztwa"
+       )
+      
     ),
-    
     
     mainPanel(tabsetPanel(
       
-        tabPanel("Wojewodztwa",
+        tabPanel("Mapa",
                 textOutput("text"),
+                textOutput("text2"),
                 leafletOutput("mapa")
         ),
         
