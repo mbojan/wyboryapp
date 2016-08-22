@@ -51,7 +51,7 @@ load_map <- function(name, path){
   
   if (any(duplicated(map@data$code))){
     warning("Duplicated entries found in ", name, ".shp!")
-    cat("Following duplicates found in ", name, ".shp:\n")
+    cat("Following duplicates found in ", name, ".shp:\n", sep="")
     print(find_duplicated(map@data, columns=1))
   }
   
@@ -73,41 +73,23 @@ set_up_maps <- function(outputdir){
   
   temppath = tempdir()
   
-  get_maps(temppath)                                            #TO DO: unzip has problems with encoding - does it affect the file contents? also, will this work on windows?
+  get_maps(temppath)
   
-  load_map(name="wojewodztwa", temppath) %>%
-          ms_simplify(keep=0.01) %>%
-          spTransform(CRS("+init=epsg:4326")) %>%               #this line converts data to usable coordinate system
-          saveRDS(paste0(outputdir, "/woj.rds", collapse=""))
-  
-  load_map(name="powiaty", temppath) %>%                        # TO DO: test different 'keep' values and whether all polygons are still there after simplifying
-          ms_simplify(keep=0.01) %>%                            # for wojewodztwa.shp Hel Peninsula disappears around keep=0.006
-          spTransform(CRS("+init=epsg:4326")) %>%
-          saveRDS(paste0(outputdir, "/powiaty.rds", collapse=""))
-  
-  load_map(name="panstwo", temppath) %>%
-          ms_simplify(keep=0.01) %>%
-          spTransform(CRS("+init=epsg:4326")) %>%
-          saveRDS(paste0(outputdir, "/panstwo.rds", collapse=""))
-  
-  gminy <- load_map(name="gminy", temppath) %>%                 # TO DO: there seem to be a few duplicated entries in the gminy.shp file
-          ms_simplify(keep=0.01)
+  for (i in c("panstwo", "wojewodztwa", "powiaty", "gminy", "jednostki_ewidencyjne")){
     
-  gminy %>%
-          spTransform(CRS("+init=epsg:4326")) %>%
-          saveRDS(paste0(outputdir, "/gminy.rds", collapse=""))
+    temp <- load_map(name = i, temppath)
+    name <- i
+    
+    if (i == "jednostki_ewidencyjne"){                                # extracts Warsaw district data from "jednostki_ewidencyjne.shp"
+      temp <- subset(temp, type == 8)                                 # Krakow and Lodz maps can also be found here ('type == 9')
+      name <- "warszawa"
+    }
+    
+    temp %>%
+      rmapshaper::ms_simplify(keep = 0.01) %>%                        # simplifies the polygons to reduce map size
+      sp::spTransform(CRS("+init=epsg:4326")) %>%                     # converts map data to usable coordinate system
+      saveRDS(get(i), paste0(outputdir, "/", name, ".rds", collapse=""))
+  }
   
-  gminy_code <- gminy$code
-  rm(gminy)
-  
-  miasta <- load_map(name="jednostki_ewidencyjne", temppath)
-  miasta <- miasta[!(miasta$code %in% gminy_code),]         #Krakow, Lodz, Warszawa
-  
-  miasta %>%
-          subset(type==8)  %>%                                #dropping Krakow and Lodz maps
-          ms_simplify(keep=0.01) %>%
-          spTransform(CRS("+init=epsg:4326")) %>%
-        	saveRDS(paste0(outputdir, "/warszawa.rds", collapse=""))
-  
- unlink(temppath)
+  unlink(temppath)
 }

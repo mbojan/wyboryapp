@@ -23,26 +23,65 @@ generate_query <- function(poziom, zmienna, kod){
 
 #************************************************************
 
+sum_warsaw <- function(zmienna, con){ #Warsaw is the only city for which the district code is specified in the data (and cumulative score isn't stored)
+  
+  suma_zmienna <- 0
+  suma_lacznie <- 0
+  NA_found <- FALSE
+  
+  for (i in 146502:146519){
+    kod <- as.character(i)
+    
+    temp <- unlist(dbGetQuery(con, generate_query("gminy", zmienna, kod)))
+    
+    if (!NA_found){
+      if (is.finite(temp)){
+        suma_zmienna <- suma_zmienna + temp
+        suma_lacznie <- suma_lacznie + unlist(dbGetQuery(con, generate_query("gminy", "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów", kod)))
+      } else {
+        NA_found <- TRUE
+      }
+    }
+    
+  }
+  
+  if (NA_found){
+    wynik <- NA
+  } else {
+    wynik <- as.integer(suma_zmienna/suma_lacznie * 100)
+  }
+  
+  return(wynik)
+}
+
+#************************************************************
+
 find_results <- function(zmienna, poziom, TERYT, con){
   
   wyniki <- vector()
   
   if (poziom=="warszawa"){
-    poziom = "gminy"
+    poziom <- "gminy"
   }
   
   for (i in TERYT){
-  
-    suma_zmienna <- unlist(dbGetQuery(con, generate_query(poziom, zmienna, i)))
     
-    if (is.finite(suma_zmienna)){
-      
-      suma_lacznie <- unlist(dbGetQuery(con, generate_query(poziom, "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów", i)))
-      dod_wynik <- as.integer(suma_zmienna/suma_lacznie * 100)
+    if (poziom=="gminy" && i=="146501"){
+      wyniki <- append(wyniki, sum_warsaw(zmienna, con)) #sums all Warsaw district scores from the db
     } else {
-      dod_wynik <- NA
+      
+      suma_zmienna <- unlist(dbGetQuery(con, generate_query(poziom, zmienna, i)))
+      
+      if (is.finite(suma_zmienna)){
+        
+        suma_lacznie <- unlist(dbGetQuery(con, generate_query(poziom, "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów", i)))
+        dod_wynik <- as.integer(suma_zmienna/suma_lacznie * 100)
+      } else {
+        dod_wynik <- NA
+      }
+      wyniki <- append(wyniki, dod_wynik)
+      
     }
-    wyniki <- append(wyniki, dod_wynik)
   }  
 
   return(wyniki)
@@ -66,7 +105,7 @@ draw_map <- function(mapa, wyniki){
   
   leaflet() %>%
     addTiles() %>%
-    addPolygons(data=mapa, stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, fillColor=kolory) %>%
+    addPolygons(data=mapa, stroke = TRUE, weight=1, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=kolory) %>%
     setView(lng = 19.27, lat = 52.03, zoom = 6)
   
 }
