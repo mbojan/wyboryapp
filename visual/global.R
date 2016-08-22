@@ -3,55 +3,29 @@ library(leaflet)
 
 #************************************************************
 
-generate_query <- function(poziom, zmienna, kod){
+get_from_db <- function(poziom, zmienna, kod, con){
   
-  query <- paste0("SELECT SUM([", zmienna, "])   
+  query <- paste0("SELECT SUM([", zmienna, "]),
+                  SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów])
                   FROM komisje", collapse='')
   
   if (poziom != "panstwo"){
-    
     poziom <- switch(poziom,
               "powiaty" = "Kod.powiat",
               "wojewodztwa" = "Kod.wojewodztwo",
               "gminy" = "TERYT.gminy")
     
-    query <- paste0(query, " WHERE [", poziom, "] = '", kod, "'", collapse = '')
-  }
-
-  return(query)
-}
-
-#************************************************************
-
-sum_warsaw <- function(zmienna, con){ #Warsaw is the only city for which the district code is specified in the data (and cumulative score isn't stored)
-  
-  suma_zmienna <- 0
-  suma_lacznie <- 0
-  NA_found <- FALSE
-  
-  for (i in 146502:146519){
-    kod <- as.character(i)
-    
-    temp <- unlist(dbGetQuery(con, generate_query("gminy", zmienna, kod)))
-    
-    if (!NA_found){
-      if (is.finite(temp)){
-        suma_zmienna <- suma_zmienna + temp
-        suma_lacznie <- suma_lacznie + unlist(dbGetQuery(con, generate_query("gminy", "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów", kod)))
-      } else {
-        NA_found <- TRUE
-      }
+    if (grepl(pattern = "[%]", x = kod)){
+      query <- paste0(query, " WHERE [", poziom, "] LIKE '", kod, "'", collapse = '')
+    } else {
+      query <- paste0(query, " WHERE [", poziom, "] = '", kod, "'", collapse = '')
     }
     
   }
   
-  if (NA_found){
-    wynik <- NA
-  } else {
-    wynik <- as.integer(suma_zmienna/suma_lacznie * 100)
-  }
-  
-  return(wynik)
+  result <- dbGetQuery(con, query)
+
+  return(result)
 }
 
 #************************************************************
@@ -60,30 +34,26 @@ find_results <- function(zmienna, poziom, TERYT, con){
   
   wyniki <- vector()
   
-  if (poziom=="warszawa"){
+  if (poziom == "warszawa"){
     poziom <- "gminy"
   }
   
   for (i in TERYT){
     
-    if (poziom=="gminy" && i=="146501"){
-      wyniki <- append(wyniki, sum_warsaw(zmienna, con)) #sums all Warsaw district scores from the db
+    if (poziom == "gminy" && i == "146501"){
+      result <- get_from_db(poziom, zmienna, "1465%", con) #sums all scores for Warsaw districts
     } else {
-      
-      suma_zmienna <- unlist(dbGetQuery(con, generate_query(poziom, zmienna, i)))
-      
-      if (is.finite(suma_zmienna)){
-        
-        suma_lacznie <- unlist(dbGetQuery(con, generate_query(poziom, "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów", i)))
-        dod_wynik <- as.integer(suma_zmienna/suma_lacznie * 100)
-      } else {
-        dod_wynik <- NA
-      }
-      wyniki <- append(wyniki, dod_wynik)
-      
+      result <- get_from_db(poziom, zmienna, i, con)
     }
-  }  
-
+    
+    if (is.finite(result[[1]][1])){
+      dodatk_wynik <- (result[[1]][1]/result[[2]][1]) * 100
+    } else {
+      dodatk_wynik <- NA
+    }
+    
+    wyniki <- append(wyniki, dodatk_wynik)
+  }
   return(wyniki)
 }
   
