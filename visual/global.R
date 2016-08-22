@@ -27,6 +27,10 @@ find_results <- function(zmienna, poziom, TERYT, con){
   
   wyniki <- vector()
   
+  if (poziom=="warszawa"){
+    poziom = "gminy"
+  }
+  
   for (i in TERYT){
   
     suma_zmienna <- unlist(dbGetQuery(con, generate_query(poziom, zmienna, i)))
@@ -62,6 +66,7 @@ draw_map <- function(mapa, wyniki){
   
   leaflet() %>%
     addTiles() %>%
-    addPolygons(data=mapa, stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, fillColor=kolory)
+    addPolygons(data=mapa, stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, fillColor=kolory) %>%
+    setView(lng = 19.27, lat = 52.03, zoom = 6)
   
 }

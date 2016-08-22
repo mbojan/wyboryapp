@@ -39,8 +39,9 @@ shinyUI(fluidPage(
                   choices = list(
                     "panstwo",                                               
                     "wojewodztwa",                                                                                           
-                    "powiaty"
-                    #"gminy"
+                    "powiaty",
+                    "warszawa",
+                    "gminy"
                    ),
                   selected="wojewodztwa"
        )
@@ -52,7 +53,7 @@ shinyUI(fluidPage(
         tabPanel("Mapa",
                 textOutput("text"),
                 textOutput("text2"),
-                leafletOutput("mapa")
+                leafletOutput("mapa", width="100%", height=600)
         ),
         
         tabPanel("Temp",
