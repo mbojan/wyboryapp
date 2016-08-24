@@ -1,8 +1,7 @@
 library(rmapshaper)
 library(rgdal)
+library(rgeos)
 library(tidyr)
-
-source("utils.R")
 
 #************************************************************
 
@@ -12,7 +11,6 @@ get_maps <- function(path){
   download.file("ftp://91.223.135.109/prg/jednostki_administracyjne.zip", #URL works as of 10 Aug 2016
                 destfile = temp)
   
-  Sys.setlocale('LC_ALL','C') 
   unzip(temp, exdir=path, junkpaths = TRUE)
   file.remove(temp)
   
@@ -45,13 +43,7 @@ load_map <- function(name, path){
   names(map@data) <- c("code", "name", "area")
   
   if (name != "wojewodztwa" && name != "panstwo"){             #area data available only for these two
-      map@data <- map@data[, -3]    
-  }
-  
-  if (any(duplicated(map@data$code))){
-    warning("Duplicated entries found in ", name, ".shp!")
-    cat("Following duplicates found in ", name, ".shp:\n", sep="")
-    print(find_duplicated(map@data, columns=1))
+    map@data <- map@data[, -3]
   }
   
   if (name == "gminy"){
@@ -68,29 +60,58 @@ load_map <- function(name, path){
 }
 
 #************************************************************
+
+remove_tiny_polygons <- function(map){
+  
+  tiny_polygons <- which(map$area/100<1)
+  
+  #quick checks if no needed data is dropped
+  tiny_polygons <- tiny_polygons[map$name[tiny_polygons] %in% map$name[-tiny_polygons]]
+  tiny_polygons <- tiny_polygons[map$code[tiny_polygons] %in% map$code[-tiny_polygons]] 
+  
+  warning("Auto removing ", length(tiny_polygons), " entries with area smaller than 1 sq km")
+  
+  map <- map[-tiny_polygons,]
+  return(map)
+}
+
+#************************************************************
+
 set_up_maps <- function(outputdir){
   
   temppath = tempdir()
   
-  Sys.setlocale("LC_CTYPE", "pl_PL.utf8")
-  
+  Sys.setlocale("LC_CTYPE","C")
   get_maps(temppath)
   
-  for (i in c("panstwo", "wojewodztwa", "powiaty", "gminy", "jednostki_ewidencyjne")){
-    
-    temp <- load_map(name = i, temppath)
+  Sys.setlocale("LC_CTYPE", "pl_PL.utf8")
+  
+  all_maps <- c("jednostki_ewidencyjne", "panstwo", "wojewodztwa", "powiaty", "gminy")
+  
+  for (i in all_maps){
     name <- i
+    map <- load_map(name, temppath)
     
-    if (i == "jednostki_ewidencyjne"){                                # extracts Warsaw district data from "jednostki_ewidencyjne.shp"
-      temp <- subset(temp, type == 8)                                 # Krakow and Lodz maps can also be found here ('type == 9')
+    if (i == "jednostki_ewidencyjne"){                              # extracts Warsaw district data from "jednostki_ewidencyjne.shp"
+      map <- subset(map, type == 8)                                 # Krakow and Lodz maps can also be found here ('type == 9')
       name <- "warszawa"
     }
+     
+    if (any(duplicated(map$code))){
+      warning("Duplicated entries found in ", name, " data!")
+      map <- remove_tiny_polygons(map)
+      
+      if (any(duplicated(map$code))){
+        stop("Duplicates still occur, fix the data!")
+      }
+    }
     
-    temp %>%
-      rmapshaper::ms_simplify(keep = 0.01) %>%                        # simplifies the polygons to reduce map size
+    map %>%
+      rmapshaper::ms_simplify(keep = 0.015) %>%                       # simplifies the polygons to reduce map size
       sp::spTransform(CRS("+init=epsg:4326")) %>%                     # converts map data to usable coordinate system
       saveRDS(paste0(outputdir, "/", name, ".rds", collapse=""))
+    
+    gc()
   }
-  
   unlink(temppath)
 }
