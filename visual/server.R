@@ -1,8 +1,3 @@
-library(DBI)
-library(RSQLite)
-library(sp)
-library(leaflet)
-
 source("global.R")
 
 shinyServer(function(input, output) {
@@ -16,26 +11,26 @@ shinyServer(function(input, output) {
   panstwo <- readRDS("./data/maps/panstwo.rds")
   
   output$text <- renderText({ 
-    paste("You have selected: ", input$zmienna)
+    paste("You have selected: ", input$given_var)
   })
   
   output$text2 <- renderText({ 
-    paste("You have selected: ", input$poziom)
+    paste("You have selected: ", input$given_level)
   })
   
-  output$mapa <- renderLeaflet({
+  output$map <- renderLeaflet({
     
-    mapa <- get(input$poziom)
-    wyniki <- find_results(input$zmienna, input$poziom, mapa$code, con)
+    map <- get(input$given_level)
+    percent_scores <- find_results(input$given_var, input$given_level, map$code, con)
     
     #scaling - temporary
-    if (!all(is.na(wyniki)) && !all(wyniki==0) && input$poziom!="panstwo"){
-      while (!max(wyniki, na.rm=TRUE)>50){
-        wyniki <- wyniki*2
+    if (!all(is.na(percent_scores)) && !all(percent_scores == 0) && input$given_level != "panstwo"){
+      while (!max(percent_scores, na.rm=TRUE)>50){
+        percent_scores <- percent_scores*2
       }
     }
     
-    draw_map(mapa, wyniki)
+    draw_map(map, percent_scores)
     
  })
 })

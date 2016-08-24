@@ -10,7 +10,7 @@ shinyUI(fluidPage(
       helpText("Wyniki wyborow parlamentarnych 2015."),
       helpText("UWAGA! Tymczasowo wszystkie wyniki są skalowane, żeby mapa była lepiej widoczna."),
       
-      selectInput("zmienna",
+      selectInput("given_var",
                   label = h6(strong("Wybierz zmienna.")), 
                   choices = list(
                             "Razem.KW.Prawo.i.Sprawiedliwość",                                               
@@ -34,14 +34,14 @@ shinyUI(fluidPage(
                   selected = "Razem.KW.Prawo.i.Sprawiedliwość"
                   ),
       
-      selectInput("poziom",
+      selectInput("given_level",
                   label = h6(strong("Wybierz poziom.")), 
                   choices = list(
                     "panstwo",                                               
-                    "wojewodztwa",                                                                                           
-                    "powiaty",
-                    "warszawa",
-                    "gminy"
+                    "wojewodztwa"                                                                                           
+                    #"powiaty",
+                    #"warszawa",
+                    #"gminy"
                    ),
                   selected="wojewodztwa"
        )
@@ -53,7 +53,7 @@ shinyUI(fluidPage(
         tabPanel("Mapa",
                 textOutput("text"),
                 textOutput("text2"),
-                leafletOutput("mapa", width="100%", height=600)
+                leafletOutput("map", width="100%", height=600)
         ),
         
         tabPanel("Temp",

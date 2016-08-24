@@ -1,81 +1,82 @@
 library(sp)
 library(leaflet)
+library(DBI)
+library(RSQLite)
 
 #************************************************************
 
-get_from_db <- function(poziom, zmienna, kod, con){
+get_from_db <- function(given_level, given_var, con){
   
-  query <- paste0("SELECT SUM([", zmienna, "]),
-                  SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów])
-                  FROM komisje", collapse='')
+  level_code <- switch(given_level,
+                   "powiaty" = "Kod.powiat",
+                   "wojewodztwa" = "Kod.wojewodztwo",
+                   "gminy" = "TERYT.gminy",
+                   "panstwo" = NA)
   
-  if (poziom != "panstwo"){
-    poziom <- switch(poziom,
-              "powiaty" = "Kod.powiat",
-              "wojewodztwa" = "Kod.wojewodztwo",
-              "gminy" = "TERYT.gminy")
-    
-    if (grepl(pattern = "[%]", x = kod)){
-      query <- paste0(query, " WHERE [", poziom, "] LIKE '", kod, "'", collapse = '')
-    } else {
-      query <- paste0(query, " WHERE [", poziom, "] = '", kod, "'", collapse = '')
-    }
-    
+  query <- paste0("SELECT SUM([", given_var, "]),
+                  SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów])",
+                  collapse='')
+  
+  if (!is.na(level_code)){
+    query <- paste0(query, ", [", level_code, "]", collapse = '')
   }
   
-  result <- dbGetQuery(con, query)
-
+  query <- paste0(query, " FROM komisje", collapse = '')
+  
+  if (!is.na(level_code)){
+    query <- paste0(query, " GROUP BY [", level_code, "]", collapse = '')
+  }
+  
+  result <- data.frame(dbGetQuery(con, query))
   return(result)
 }
 
 #************************************************************
 
-find_results <- function(zmienna, poziom, TERYT, con){
+find_results <- function(given_var, given_level, code, con){
   
-  wyniki <- vector()
-  
-  if (poziom == "warszawa"){
-    poziom <- "gminy"
+  if (given_level == "warszawa"){
+    given_level <- "gminy"
   }
   
-  for (i in TERYT){
+  result_data <- get_from_db(given_level, given_var, con)
+  result_data$percent_scores <- (as.integer(result_data[, 1])*100)/result_data[, 2]
+  #result_data <- result_data[result_data[, 3] %in% as.character(code),] #discard results without map data (from ballots located on ships and abroad)
+  
+  if(given_level!="panstwo"){
+    sorted_codes <- data.frame(code, 1:length(code))
+    names(sorted_codes) <- c("Code.col", "Order.col")
+    sorted_codes$Code.col <- as.character(sorted_codes$Code.col)
     
-    if (poziom == "gminy" && i == "146501"){
-      result <- get_from_db(poziom, zmienna, "1465%", con) #sums all scores for Warsaw districts
-    } else {
-      result <- get_from_db(poziom, zmienna, i, con)
+    sorted_codes <- sorted_codes[order(sorted_codes$Code.col),]
+    result_data <- result_data[order(sorted_codes$Order.col),]
+    
+    if (!isTRUE(all.equal(as.character(code), result_data[,3]))){
+      warning("Database codes don't match with map codes! Expect wrong map results.")
     }
-    
-    if (is.finite(result[[1]][1])){
-      dodatk_wynik <- (result[[1]][1]/result[[2]][1]) * 100
-    } else {
-      dodatk_wynik <- NA
-    }
-    
-    wyniki <- append(wyniki, dodatk_wynik)
   }
-  return(wyniki)
+  return(result_data$percent_scores)
 }
   
 #************************************************************
   
-draw_map <- function(mapa, wyniki){
+draw_map <- function(map, percent_scores){
   
   shades <- colorRampPalette(c("white", "darkblue"))(100)
   
-  kolory <- vector()
+  map_colors <- vector()
   
-  ind_na <- which(is.na(wyniki))
-  ind_zero <- which(wyniki==0)
-  ind_non_zero <- which(wyniki!=0)
+  index_na <- which(is.na(percent_scores))
+  index_zero <- which(percent_scores < 1)
+  index_non_zero <- which(percent_scores != 0)
   
-  kolory[ind_na]  <- "gray30"
-  kolory[ind_non_zero] <- shades[round(wyniki[ind_non_zero])]
-  kolory[ind_zero] <- shades[1]
+  map_colors[index_na]  <- "gray30"
+  map_colors[index_non_zero] <- shades[round(percent_scores[index_non_zero])]
+  map_colors[index_zero] <- shades[1]
   
   leaflet() %>%
     addTiles() %>%
-    addPolygons(data=mapa, stroke = TRUE, weight=1, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=kolory) %>%
+    addPolygons(data=map, stroke = TRUE, weight=1, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
     setView(lng = 19.27, lat = 52.03, zoom = 6)
   
 }
