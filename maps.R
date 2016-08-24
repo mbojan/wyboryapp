@@ -61,34 +61,39 @@ load_map <- function(name, path){
 
 #************************************************************
 
-remove_tiny_polygons <- function(map){
+rm_tiny_polygons <- function(map){
   
-  tiny_polygons <- which(map$area/100<1)
+  tiny_polygons <- which(rgeos::gArea(map, byid=TRUE)/1000000<1)
   
   #quick checks if no needed data is dropped
   tiny_polygons <- tiny_polygons[map$name[tiny_polygons] %in% map$name[-tiny_polygons]]
   tiny_polygons <- tiny_polygons[map$code[tiny_polygons] %in% map$code[-tiny_polygons]] 
   
-  warning("Auto removing ", length(tiny_polygons), " entries with area smaller than 1 sq km")
+  warning("Auto removing ", length(tiny_polygons), " entries with insignificant area (less than 1 sq km)")
   
   map <- map[-tiny_polygons,]
-  return(map)
+  
+  if (any(duplicated(map$code))){
+    stop("Duplicates still occur, fix the data!")
+  } else {
+    return(map)
+  }
 }
 
 #************************************************************
 
 set_up_maps <- function(outputdir){
   
-  temppath = tempdir()
+  #temppath = tempdir()
   
-  Sys.setlocale("LC_CTYPE","C")
-  get_maps(temppath)
+  #Sys.setlocale("LC_CTYPE","C")
+  #get_maps(temppath)
   
   Sys.setlocale("LC_CTYPE", "pl_PL.utf8")
   
-  all_maps <- c("jednostki_ewidencyjne", "panstwo", "wojewodztwa", "powiaty", "gminy")
+  list_maps <- c("jednostki_ewidencyjne", "panstwo", "wojewodztwa", "powiaty", "gminy")
   
-  for (i in all_maps){
+  for (i in list_maps){
     name <- i
     map <- load_map(name, temppath)
     
@@ -96,22 +101,27 @@ set_up_maps <- function(outputdir){
       map <- subset(map, type == 8)                                 # Krakow and Lodz maps can also be found here ('type == 9')
       name <- "warszawa"
     }
-     
+    
     if (any(duplicated(map$code))){
       warning("Duplicated entries found in ", name, " data!")
-      map <- remove_tiny_polygons(map)
-      
-      if (any(duplicated(map$code))){
-        stop("Duplicates still occur, fix the data!")
-      }
+      map <- rm_tiny_polygons(map)
     }
     
-    map %>%
-      rmapshaper::ms_simplify(keep = 0.015) %>%                       # simplifies the polygons to reduce map size
-      sp::spTransform(CRS("+init=epsg:4326")) %>%                     # converts map data to usable coordinate system
-      saveRDS(paste0(outputdir, "/", name, ".rds", collapse=""))
+    temp <- map$name                                                # somehow this seems to make the difference between the process
+    map$name <- as.character(1:length(map$name))                    # failing due to memory issues and succeeding (on my PC)
     
+    map <- map %>%
+      rmapshaper::ms_simplify(keep = 0.015) %>%                     # simplifies the polygons to reduce map size
+      sp::spTransform(CRS("+init=epsg:4326"))                       # converts map data to usable coordinate system
+    
+    map$name <- temp
+    rm(temp)
+    
+    saveRDS(map, paste0(outputdir, "/", name, ".rds", collapse=""))
+    
+    rm(map)
     gc()
   }
-  unlink(temppath)
+  
+  #unlink(temppath)
 }

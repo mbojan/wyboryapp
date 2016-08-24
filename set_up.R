@@ -23,3 +23,5 @@ set_up <- function(maps=FALSE, results=FALSE){
 }
 
 set_up(maps=FALSE, results=TRUE)
+
+# by default, this won't process maps -> prepared maps uploaded to github, no need to set them up from scratch
