@@ -89,7 +89,7 @@ draw_map <- function(map, percent_scores, given_level){
   
   leaflet() %>%
     addTiles() %>%
-    addPolygons(data=map, stroke = TRUE, weight=0.5, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
+    addPolygons(data=map, stroke = FALSE, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3])
   
 }

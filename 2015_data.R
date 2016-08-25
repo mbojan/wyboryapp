@@ -64,7 +64,7 @@ process_file_2015 <- function(file, con, file_no){
   #segregate all columns basing on their type
   sejm_columns <- which(colnames(unsorted_data) %>% startsWith('Sejm.'))
   Razem_columns <- which(colnames(unsorted_data) %>% startsWith('Razem.'))
-  KW_columns <- c(last(sejm_columns)+1, Razem_columns[1:(length(Razem_columns)-1)] + 1)
+  KW_columns <- c(last(sejm_columns)+1, Razem_columns[1:(length(Razem_columns)-1)] + 1)  #to be dropped - contains same data as Razem_columns
   info_columns <- which(colnames(unsorted_data) %in% c("Nazwa.komisji", "Symbol.kontrolny",
                                                       "Gmina", "TERYT.gminy",
                                                       "Kod.wojewodztwo", "Kod.powiat",

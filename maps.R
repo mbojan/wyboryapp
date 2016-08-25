@@ -84,10 +84,10 @@ rm_tiny_polygons <- function(map){
 
 set_up_maps <- function(outputdir){
   
-  #temppath = tempdir()
+  temppath = tempdir()
   
-  #Sys.setlocale("LC_CTYPE","C")
-  #get_maps(temppath)
+  Sys.setlocale("LC_CTYPE","C")
+  get_maps(temppath)
   
   Sys.setlocale("LC_CTYPE", "pl_PL.utf8")
   
@@ -123,5 +123,5 @@ set_up_maps <- function(outputdir){
     gc()
   }
   
-  #unlink(temppath)
+  unlink(temppath)
 }
