@@ -8,23 +8,33 @@ library(RSQLite)
 get_from_db <- function(given_level, given_var, con){
   
   level_code <- switch(given_level,
-                   "powiaty" = "Kod.powiat",
-                   "wojewodztwa" = "Kod.wojewodztwo",
-                   "gminy" = "TERYT.gminy",
+                   "warszawa" = "[TERYT.gminy]",
+                   "gminy" = "[TERYT.gminy]",
+                   "powiaty" = "[Kod.powiat]",
+                   "wojewodztwa" = "[Kod.wojewodztwo]",
                    "panstwo" = NA)
   
-  query <- paste0("SELECT SUM([", given_var, "]),
-                  SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów])",
+  SELECT_sums <- paste0("SELECT SUM([", given_var, "]),
+                  SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów]) ",
                   collapse='')
+  query <- SELECT_sums
   
   if (!is.na(level_code)){
-    query <- paste0(query, ", [", level_code, "]", collapse = '')
+    SELECT_code <- paste0(", ", level_code, " ", collapse = '')
+    query <- paste0(query, SELECT_code, collapse = '')
+  }
+    
+  FROM_table <- paste0(" FROM komisje", collapse = '')
+  query <- paste0(query, FROM_table, collapse='')
+  
+  if (given_level == "warszawa"){
+    is_warsaw <- " WHERE [TERYT.gminy] LIKE '1465%'"
+    query <- paste0(query, is_warsaw, collapse='')
   }
   
-  query <- paste0(query, " FROM komisje", collapse = '')
-  
   if (!is.na(level_code)){
-    query <- paste0(query, " GROUP BY [", level_code, "]", collapse = '')
+    GROUP_BY <- paste0(" GROUP BY ", level_code, collapse = '')
+    query <- paste0(query, GROUP_BY, collapse = '')
   }
   
   result <- data.frame(dbGetQuery(con, query))
@@ -35,48 +45,42 @@ get_from_db <- function(given_level, given_var, con){
 
 find_results <- function(given_var, given_level, code, con){
   
-  if (given_level == "warszawa"){
-    given_level <- "gminy"
-  }
-  
   result_data <- get_from_db(given_level, given_var, con)
   result_data$percent_scores <- (as.integer(result_data[, 1])*100)/result_data[, 2]
-  #result_data <- result_data[result_data[, 3] %in% as.character(code),] #discard results without map data (from ballots located on ships and abroad)
   
-  if(given_level!="panstwo"){
-    sorted_codes <- data.frame(code, 1:length(code))
-    names(sorted_codes) <- c("Code.col", "Order.col")
-    sorted_codes$Code.col <- as.character(sorted_codes$Code.col)
+  if(given_level != "panstwo"){
     
-    sorted_codes <- sorted_codes[order(sorted_codes$Code.col),]
-    result_data <- result_data[order(sorted_codes$Order.col),]
+    #discard area codes that can't be found in the Polish map data (from ballots located on ships and abroad)
+    result_data <- result_data[result_data[, 3] %in% as.character(code),]
     
-    if (!isTRUE(all.equal(as.character(code), result_data[,3]))){
-      warning("Database codes don't match with map codes! Expect wrong map results.")
-    }
+    #results for all individual regions need to be ordered in the same way as the regions appear in the map data
+    result_data <- base::merge(data.frame(code), result_data, all.x=TRUE, by.x="code", by.y=names(result_data)[3], sort=FALSE)
   }
   return(result_data$percent_scores)
 }
   
 #************************************************************
   
-draw_map <- function(map, percent_scores){
+draw_map <- function(map, percent_scores, given_level){
   
-  shades <- colorRampPalette(c("white", "darkblue"))(100)
-  
+  shades <- colorRampPalette(c("white", "darkblue"))(101)
   map_colors <- vector()
-  
+
   index_na <- which(is.na(percent_scores))
-  index_zero <- which(percent_scores < 1)
-  index_non_zero <- which(percent_scores != 0)
+  index_else <- which(!is.na(percent_scores))
   
   map_colors[index_na]  <- "gray30"
-  map_colors[index_non_zero] <- shades[round(percent_scores[index_non_zero])]
-  map_colors[index_zero] <- shades[1]
+  map_colors[index_else] <- shades[round(percent_scores[index_else])+1] #shades vector is in 1:101 range, results are in 0:100
+  
+  if (given_level== "warszawa"){
+    view <- c(21.05, 52.24, 10)
+  } else {
+    view <- c(19.27, 52.03, 6)
+  }
   
   leaflet() %>%
     addTiles() %>%
-    addPolygons(data=map, stroke = TRUE, weight=1, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
-    setView(lng = 19.27, lat = 52.03, zoom = 6)
+    addPolygons(data=map, stroke = TRUE, weight=0.5, color="black", fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
+    setView(lng = view[1], lat = view[2], zoom = view[3])
   
 }

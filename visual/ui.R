@@ -38,10 +38,10 @@ shinyUI(fluidPage(
                   label = h6(strong("Wybierz poziom.")), 
                   choices = list(
                     "panstwo",                                               
-                    "wojewodztwa"                                                                                           
-                    #"powiaty",
-                    #"warszawa",
-                    #"gminy"
+                    "wojewodztwa",                                                                                           
+                    "powiaty",
+                    #"gminy",
+                    "warszawa"
                    ),
                   selected="wojewodztwa"
        )

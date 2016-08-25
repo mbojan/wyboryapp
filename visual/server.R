@@ -30,10 +30,8 @@ shinyServer(function(input, output) {
       }
     }
     
-    draw_map(map, percent_scores)
+    draw_map(map, percent_scores, input$given_level)
     
  })
 })
 
-
-dbDisconnect(con)
