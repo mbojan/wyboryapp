@@ -46,7 +46,16 @@ get_from_db <- function(given_level, given_var, con){
 find_results <- function(given_var, given_level, code, con){
   
   result_data <- get_from_db(given_level, given_var, con)
-  result_data$percent_scores <- (as.integer(result_data[, 1])*100)/result_data[, 2]
+  
+  if (given_level == "gminy"){
+    #aggregate scores of all Warsaw districts
+    warsaw <- which(startsWith(result_data$TERYT.gminy, "1465"))
+    
+    result_data <- rbind(result_data[-warsaw,], 
+                         c(sum(as.integer(result_data[warsaw,1])), sum(as.integer(result_data[warsaw,2])), "146501"))
+  }
+  
+  result_data$percent_scores <- (as.integer(result_data[, 1])*100)/as.integer(result_data[, 2])
   
   if(given_level != "panstwo"){
     

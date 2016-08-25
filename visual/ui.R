@@ -40,7 +40,7 @@ shinyUI(fluidPage(
                     "panstwo",                                               
                     "wojewodztwa",                                                                                           
                     "powiaty",
-                    #"gminy",
+                    "gminy",
                     "warszawa"
                    ),
                   selected="wojewodztwa"
