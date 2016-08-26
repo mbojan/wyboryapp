@@ -5,7 +5,13 @@ library(RSQLite)
 
 #************************************************************
 
-get_from_db <- function(given_level, given_var, con){
+get_from_db <- function(given_level, given_var, con, given_year){ #TEMP! given year
+  
+  #################################TEMP
+  all_votes <- switch (given_year,
+                       "2015" = "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów",
+                       "2011" = "Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów")
+  #################################TEMP
   
   level_code <- switch(given_level,
                    "warszawa" = "[TERYT.gminy]",
@@ -15,7 +21,7 @@ get_from_db <- function(given_level, given_var, con){
                    "panstwo" = NA)
   
   SELECT_sums <- paste0("SELECT SUM([", given_var, "]),
-                  SUM([Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów]) ",
+                  SUM([", all_votes, "]) ",
                   collapse='')
   query <- SELECT_sums
   
@@ -43,9 +49,9 @@ get_from_db <- function(given_level, given_var, con){
 
 #************************************************************
 
-find_results <- function(given_var, given_level, code, con){
+find_results <- function(given_var, given_level, code, con, given_year){ #TEMP! given year
   
-  result_data <- get_from_db(given_level, given_var, con)
+  result_data <- get_from_db(given_level, given_var, con, given_year) #TEMP! given year
   
   if (given_level == "gminy"){
     #aggregate scores of all Warsaw districts

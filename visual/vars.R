@@ -1,0 +1,36 @@
+
+vars_2011 <- c("KW.Prawo.i.Sprawiedliwość",
+               "KW.Polska.Jest.Najważniejsza",
+               "KW.Sojusz.Lewicy.Demokratycznej",
+               "KW.Ruch.Palikota",
+               "KW.Polskie.Stronnictwo.Ludowe",
+               "KW.Polska.Partia.Pracy.Sierpień.80",
+               "KW.Platforma.Obywatelska.RP",
+               "KW.Nowa.Prawica.Janusza.Korwin.Mikke",
+               "KW.Prawica",
+               "KW.NDP.Samoobrona.Leppera",
+               "KWW.Mniejszość.Niemiecka")
+
+vars_2015 <- c("Razem.KW.Prawo.i.Sprawiedliwość",
+               "Razem.KW.Platforma.Obywatelska.RP",
+               "Razem.KW.Razem",
+               "Razem.KW.KORWiN",
+               "Razem.Komitet.Wyborczy.PSL",
+               "Razem.KKW.Zjednoczona.Lewica.SLD+TR+PPS+UP+Zieloni",
+               "Razem.KWW.„Kukiz'15”",
+               "Razem.KW.Nowoczesna.Ryszarda.Petru",
+               "Razem.KWW.JOW.Bezpartyjni",
+               "Razem.KWW.Zbigniewa.Stonogi",
+               "Razem.KWW.Grzegorza.Brauna.„Szczęść.Boże!”",
+               "Razem.KW.Samoobrona",
+               "Razem.KWW.Ruch.Społeczny.RP",
+               "Razem.Komitet.Wyborczy.Kongres.Nowej.Prawicy",
+               "Razem.KWW.Obywatele.do.Parlamentu",
+               "Razem.KWW.Mniejszość.Niemiecka",
+               "Razem.KWW.Zjednoczeni.dla.Śląska")
+
+map_levels <- c("panstwo",
+                "wojewodztwa",
+                "powiaty",
+                "gminy",
+                "warszawa")
