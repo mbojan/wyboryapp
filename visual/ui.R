@@ -9,8 +9,7 @@ shinyUI(navbarPage("Wybory",
     sidebarLayout(
       
       sidebarPanel(
-        helpText("Wyniki wyborow parlamentarnych 2015."),
-        helpText("UWAGA! Tymczasowo wszystkie wyniki są skalowane, żeby mapa była lepiej widoczna."),
+        helpText("Wyniki wyborów parlamentarnych 2011 i 2015."),
         
         selectInput("given_year",
                     label = h6(strong("Wybierz rok.")), 
