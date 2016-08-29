@@ -19,17 +19,17 @@ shinyUI(navbarPage("Wybory",
                     selected = "2015"
                     ),
         
-        selectInput("given_var",
-                    label = h6(strong("TEMP! Wybierz zmienna 2015.")), 
-                    choices = vars_2015,
-                    selected = "Razem.KW.Prawo.i.Sprawiedliwość"
-                    ),
+        conditionalPanel(condition = "input.given_year == '2015' ",
+                        selectInput("given_var",
+                                    label = h6(strong("Wybierz zmienną.")), 
+                                    choices = vars_2015)
+                        ),
         
-        selectInput("given_var_2011",
-                    label = h6(strong("TEMP! Wybierz zmienna 2011.")), 
-                    choices = vars_2011,
-                    selected = "KW.Prawo.i.Sprawiedliwość"
-        ),
+        conditionalPanel(condition = "input.given_year == '2011' ",
+                         selectInput("given_var_2011",
+                                     label = h6(strong("Wybierz zmienną.")), 
+                                     choices = vars_2011)
+                        ),
         
         selectInput("given_level",
                     label = h6(strong("Wybierz poziom.")), 
