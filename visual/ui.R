@@ -19,7 +19,7 @@ shinyUI(navbarPage("Wybory",
                     ),
         
         conditionalPanel(condition = "input.given_year == '2015' ",
-                        selectInput("given_var",
+                        selectInput("given_var_2015",
                                     label = h6(strong("Wybierz zmienną.")), 
                                     choices = vars_2015)
                         ),
@@ -34,6 +34,14 @@ shinyUI(navbarPage("Wybory",
                     label = h6(strong("Wybierz poziom.")), 
                     choices = map_levels,
                     selected = "wojewodztwa"
+                    ),
+        
+        sliderInput("range",
+                    label = h6(strong("Przedział wyników w %:")),
+                    min = 0,
+                    max = 100,
+                    step = 0,
+                    value = c(0, 100)
                     )
         
       ), #end sidebarpanel

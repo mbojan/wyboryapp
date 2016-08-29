@@ -25,21 +25,27 @@ shinyServer(function(input, output) {
                   "2015" = con_2015,
                   "2011" = con_2011)
     
-    var <- switch(input$given_year,
-                  "2015" = input$given_var,
+    given_var <- switch(input$given_year,
+                  "2015" = input$given_var_2015,
                   "2011" = input$given_var_2011)
     
+    #TO DO: standarize variable names
+    color <- switch(given_var,
+                    "KW.Platforma.Obywatelska.RP" = "orange",
+                    "Razem.KW.Platforma.Obywatelska.RP" = "orange",
+                    "KW.Prawo.i.Sprawiedliwość" = "darkblue",
+                    "Razem.KW.Prawo.i.Sprawiedliwość" = "darkblue",
+                    "KW.Ruch.Palikota" = "darkorange",
+                    "Razem.Komitet.Wyborczy.PSL" = "darkgreen",
+                    "KW.Polskie.Stronnictwo.Ludowe" = "darkgreen",
+                    "KW.Sojusz.Lewicy.Demokratycznej" = "red",
+                    "purple")
+    
     map <- get(input$given_level)
-    percent_scores <- find_results(var, input$given_level, map$code, con, input$given_year)
     
-    #scaling - temporary
-    #if (!all(is.na(percent_scores)) && !all(percent_scores == 0) && input$given_level != "panstwo"){
-    #  while (!max(percent_scores, na.rm=TRUE)>50){
-    #    percent_scores <- percent_scores*2
-    #  }
-    #}
+    percent_scores <- find_results(given_var, input$given_level, map$code, con, input$given_year)
     
-    draw_map(map, percent_scores, input$given_level)
+    draw_map(map, percent_scores, input$given_level, min=input$range[1], max=input$range[2], color)
     
  })
 })

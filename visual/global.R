@@ -76,18 +76,23 @@ find_results <- function(given_var, given_level, code, con, given_year){ #TEMP! 
   
 #************************************************************
   
-draw_map <- function(map, percent_scores, given_level){
+draw_map <- function(map, percent_scores, given_level, min, max, color){
   
-  shades <- colorRampPalette(c("white", "darkblue"))(101)
-  map_colors <- vector()
-
   index_na <- which(is.na(percent_scores))
   index_else <- which(!is.na(percent_scores))
   
-  map_colors[index_na]  <- "gray30"
-  map_colors[index_else] <- shades[round(percent_scores[index_else])+1] #shades vector is in 1:101 range, results are in 0:100
+  percent_scores[index_else] <- pmax(percent_scores[index_else], min)
+  percent_scores[index_else] <- pmin(percent_scores[index_else], max)
   
-  if (given_level== "warszawa"){
+  #percent_scores[index_else] <- ((percent_scores[index_else]-min)/(max-min))*100
+  
+  shades <- colorRampPalette(c("white", color))(max-min+1)
+  map_colors <- vector()
+  
+  map_colors[index_na]  <- "gray30"
+  map_colors[index_else] <- shades[round(percent_scores[index_else])-min+1]
+  
+  if (given_level == "warszawa"){
     view <- c(21.05, 52.24, 10)
   } else {
     view <- c(19.27, 52.03, 6)
