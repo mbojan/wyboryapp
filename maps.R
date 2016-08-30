@@ -3,6 +3,7 @@ library(rgdal)
 library(rgeos)
 library(tidyr)
 
+source("utils.R")
 #************************************************************
 
 get_maps <- function(path){
@@ -97,7 +98,7 @@ set_up_maps <- function(outputdir){
     name <- i
     map <- load_map(name, temppath)
     
-    if (i == "jednostki_ewidencyjne"){                              # extracts Warsaw district data from "jednostki_ewidencyjne.shp"
+    if (name == "jednostki_ewidencyjne"){                           # extracts Warsaw district data from "jednostki_ewidencyjne.shp"
       map <- subset(map, type == 8)                                 # Krakow and Lodz maps can also be found here ('type == 9')
       name <- "warszawa"
     }
@@ -105,6 +106,11 @@ set_up_maps <- function(outputdir){
     if (any(duplicated(map$code))){
       warning("Duplicated entries found in ", name, " data!")
       map <- rm_tiny_polygons(map)
+    }
+    
+    if (name == "panstwo" || name == "warszawa"){                   # fix all uppercase names
+      map$name <- unname(sapply(map$name, function(x)
+            simpleCap(gsub(x=x, pattern="-", replacement=" "))))    # changes 'Praga-północ' into 'Praga Północ' for simplicity's sake
     }
     
     temp <- map$name                                                # somehow this seems to make the difference between the process
