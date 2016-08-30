@@ -2,6 +2,7 @@ library(sp)
 library(leaflet)
 library(DBI)
 library(RSQLite)
+library(htmltools)
 
 #************************************************************
 
@@ -61,7 +62,7 @@ find_results <- function(given_var, given_level, code, con, given_year){ #TEMP! 
                          c(sum(as.integer(result_data[warsaw,1])), sum(as.integer(result_data[warsaw,2])), "146501"))
   }
   
-  result_data$percent_scores <- (as.integer(result_data[, 1])*100)/as.integer(result_data[, 2])
+  result_data$scores <- (as.integer(result_data[, 1])*100)/as.integer(result_data[, 2])
   
   if(given_level != "panstwo"){
     
@@ -71,39 +72,45 @@ find_results <- function(given_var, given_level, code, con, given_year){ #TEMP! 
     #results for all individual regions need to be ordered in the same way as the regions appear in the map data
     result_data <- base::merge(data.frame(code), result_data, all.x=TRUE, by.x="code", by.y=names(result_data)[3], sort=FALSE)
   }
-  return(result_data$percent_scores)
+  return(result_data$scores)
 }
   
 #************************************************************
   
-draw_map <- function(map, percent_scores, given_level, min, max, color){
+draw_map <- function(map, scores, given_level, min, max, color){
   
-  index_na <- which(is.na(percent_scores))
-  index_else <- which(!is.na(percent_scores))
+  index_na <- which(is.na(scores))
+  index_else <- which(!is.na(scores))
   
-  percent_scores[index_else] <- pmax(percent_scores[index_else], min)
-  percent_scores[index_else] <- pmin(percent_scores[index_else], max)
+  scaled_scores <- scores
   
-  #percent_scores[index_else] <- ((percent_scores[index_else]-min)/(max-min))*100
+  scaled_scores[index_else] <- pmax(scaled_scores[index_else], min)
+  scaled_scores[index_else] <- pmin(scaled_scores[index_else], max)
   
   shades <- colorRampPalette(c("white", color))(max-min+1)
   map_colors <- vector()
   
   map_colors[index_na]  <- "gray30"
-  map_colors[index_else] <- shades[round(percent_scores[index_else])-min+1]
+  map_colors[index_else] <- shades[round(scaled_scores[index_else])-min+1]
   
   if (given_level == "warszawa"){
     view <- c(21.05, 52.24, 10)
   } else {
     view <- c(19.27, 52.03, 6)
   }
+
+  scores <- round(scores, 2)
   
   leaflet() %>%
     addTiles() %>%
     addPolygons(data=map, stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
     addPolygons(data=map, stroke = TRUE, weight=0.5, color="black", group="Wyświetl granice", fillOpacity = 0) %>%
+    addPolygons(data=map, stroke=FALSE, fillOpacity=0, group="Wyświetl etykiety",
+                label = unname(mapply(function(x, y) {
+                  sprintf("%s<br>%s", htmlEscape(x), htmlEscape(y)) %>% paste0("%", collapse='') %>% HTML()
+                  }, map$name, scores, SIMPLIFY = F))) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3]) %>%
-    addLayersControl(overlayGroups="Wyświetl granice", options=layersControlOptions(collapsed=FALSE))
+    addLayersControl(overlayGroups=c("Wyświetl granice", "Wyświetl etykiety"), options=layersControlOptions(collapsed=FALSE))
   
   
 }
