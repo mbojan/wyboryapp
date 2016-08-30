@@ -3,9 +3,8 @@ library(leaflet)
 
 source("vars.R")
 
-
 shinyUI(navbarPage("Wybory",
-  tabPanel("2015",
+  tabPanel("Wybory parlamentarne",
     sidebarLayout(
       
       sidebarPanel(
