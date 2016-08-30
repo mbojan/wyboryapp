@@ -6,24 +6,21 @@ library(htmltools)
 
 #************************************************************
 
-get_from_db <- function(given_level, given_var, con, given_year){ #TEMP! given year
-  
-  #################################TEMP
-  all_votes <- switch (given_year,
-                       "2015" = "Sejm.-.Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów",
-                       "2011" = "Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów")
-  #################################TEMP
-  
+get_from_db <- function(given_level, given_var, con){
+
   level_code <- switch(given_level,
-                   "warszawa" = "[TERYT.gminy]",
-                   "gminy" = "[TERYT.gminy]",
+                   "warszawa" = "[Kod.terytorialny.gminy]",
+                   "gminy" = "[Kod.terytorialny.gminy]",
                    "powiaty" = "[Kod.powiat]",
                    "wojewodztwa" = "[Kod.wojewodztwo]",
                    "panstwo" = NA)
   
+  all_votes <- "Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów"
+  
   SELECT_sums <- paste0("SELECT SUM([", given_var, "]),
                   SUM([", all_votes, "]) ",
                   collapse='')
+  
   query <- SELECT_sums
   
   if (!is.na(level_code)){
@@ -35,7 +32,7 @@ get_from_db <- function(given_level, given_var, con, given_year){ #TEMP! given y
   query <- paste0(query, FROM_table, collapse='')
   
   if (given_level == "warszawa"){
-    is_warsaw <- " WHERE [TERYT.gminy] LIKE '1465%'"
+    is_warsaw <- " WHERE [Kod.terytorialny.gminy] LIKE '1465%'"
     query <- paste0(query, is_warsaw, collapse='')
   }
   
@@ -50,13 +47,13 @@ get_from_db <- function(given_level, given_var, con, given_year){ #TEMP! given y
 
 #************************************************************
 
-find_results <- function(given_var, given_level, code, con, given_year){ #TEMP! given year
+find_results <- function(given_var, given_level, code, con){
   
-  result_data <- get_from_db(given_level, given_var, con, given_year) #TEMP! given year
+  result_data <- get_from_db(given_level, given_var, con)
   
   if (given_level == "gminy"){
     #aggregate scores of all Warsaw districts
-    warsaw <- which(startsWith(result_data$TERYT.gminy, "1465"))
+    warsaw <- which(startsWith(result_data$Kod.terytorialny.gminy, "1465"))
     
     result_data <- rbind(result_data[-warsaw,], 
                          c(sum(as.integer(result_data[warsaw,1])), sum(as.integer(result_data[warsaw,2])), "146501"))
@@ -111,6 +108,4 @@ draw_map <- function(map, scores, given_level, min, max, color){
                   }, map$name, scores, SIMPLIFY = F))) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3]) %>%
     addLayersControl(overlayGroups=c("Wyświetl granice", "Wyświetl etykiety"), options=layersControlOptions(collapsed=FALSE))
-  
-  
 }

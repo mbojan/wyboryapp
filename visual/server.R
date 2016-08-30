@@ -11,14 +11,6 @@ shinyServer(function(input, output) {
   wojewodztwa <- readRDS("./data/maps/wojewodztwa.rds")
   panstwo <- readRDS("./data/maps/panstwo.rds")
   
-  output$text <- renderText({ 
-    paste("You have selected: ", input$given_var)
-  })
-  
-  output$text2 <- renderText({ 
-    paste("You have selected: ", input$given_level)
-  })
-  
   output$map <- renderLeaflet({
     
     con <- switch(input$given_year,
@@ -29,17 +21,16 @@ shinyServer(function(input, output) {
                   "2015" = input$given_var_2015,
                   "2011" = input$given_var_2011)
     
-    #TO DO: standarize variable names
     color <- switch(given_var,
-                    "KW.Platforma.Obywatelska.RP" = "orange",
-                    "Razem.KW.Platforma.Obywatelska.RP" = "orange",
-                    "KW.Prawo.i.Sprawiedliwość" = "darkblue",
-                    "Razem.KW.Prawo.i.Sprawiedliwość" = "darkblue",
-                    "KW.Ruch.Palikota" = "darkorange",
-                    "Razem.Komitet.Wyborczy.PSL" = "darkgreen",
+                    "KW.Platforma.Obywatelska.RP" = "darkorange",
+                    "KW.Ruch.Palikota" = "maroon4",
+                    "KW.Razem" = "maroon4",
+                    "Komitet.Wyborczy.PSL" = "darkgreen",
                     "KW.Polskie.Stronnictwo.Ludowe" = "darkgreen",
                     "KW.Sojusz.Lewicy.Demokratycznej" = "red",
-                    "purple")
+                    "KKW.Zjednoczona.Lewica.SLD+TR+PPS+UP+Zieloni" = "red",
+                    "KW.Nowoczesna.Ryszarda.Petru" = "royalblue3",
+                    "darkblue")
     
     map <- get(input$given_level)
     

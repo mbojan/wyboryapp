@@ -80,6 +80,12 @@ process_file_2015 <- function(file, con, file_no){
   #segregate data into relevant tables  
   komisje <- unsorted_data %>%
         select(info_columns, sejm_columns, Razem_columns)
+  
+  #to standardize column names across data from various elections
+  colnames(komisje) <- colnames(komisje) %>%
+    gsub(pattern="Sejm.-.", replacement="") %>%
+    gsub(pattern="Razem.", replacement="") %>%
+    gsub(pattern="TERYT", replacement="Kod.terytorialny")
 
   wyniki <- unsorted_data %>%
         select(info_columns, surname_columns)
