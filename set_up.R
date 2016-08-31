@@ -10,7 +10,7 @@ set_up <- function(maps=FALSE, data_2015=FALSE, data_2011=FALSE){
 
   #1) Election results data from parlament2015.pkw.gov.pl
   
-  if (results==TRUE){
+  if (data_2015==TRUE){
     dir.create("./visual/data")
     set_up_data_2015(dbpath = "./visual/data/wyniki2015.sqlite3")
   }
