@@ -1,15 +1,16 @@
 source("global.R")
 
+warszawa <- readRDS("./data/maps/warszawa.rds")
+gminy <- readRDS("./data/maps/gminy.rds")
+powiaty <- readRDS("./data/maps/powiaty.rds")
+wojewodztwa <- readRDS("./data/maps/wojewodztwa.rds")
+panstwo <- readRDS("./data/maps/panstwo.rds")
+
+
 shinyServer(function(input, output) {
   
   con_2015 <- dbConnect(SQLite(), "./data/wyniki2015.sqlite3")
   con_2011 <- dbConnect(SQLite(), "./data/wyniki2011.sqlite3")  
-  
-  warszawa <- readRDS("./data/maps/warszawa.rds")
-  gminy <- readRDS("./data/maps/gminy.rds")
-  powiaty <- readRDS("./data/maps/powiaty.rds")
-  wojewodztwa <- readRDS("./data/maps/wojewodztwa.rds")
-  panstwo <- readRDS("./data/maps/panstwo.rds")
   
   output$map <- renderLeaflet({
     
