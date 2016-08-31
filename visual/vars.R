@@ -1,5 +1,6 @@
 
-vars_2011 <- c("Platforma Obywatelska" = "KW.Platforma.Obywatelska.RP",
+vars_2011 <- c("Frekwencja",
+               "Platforma Obywatelska" = "KW.Platforma.Obywatelska.RP",
                "Prawo i Sprawiedliwość" = "KW.Prawo.i.Sprawiedliwość",
                "Ruch Palikota" = "KW.Ruch.Palikota",
                "Polskie Stronnictwo Ludowe" = "KW.Polskie.Stronnictwo.Ludowe",
@@ -11,7 +12,8 @@ vars_2011 <- c("Platforma Obywatelska" = "KW.Platforma.Obywatelska.RP",
                "Mniejszość Niemiecka" = "KWW.Mniejszość.Niemiecka",
                "Samoobrona" = "KW.NDP.Samoobrona.Leppera")
 
-vars_2015 <- c("Prawo i Sprawiedliwość" = "KW.Prawo.i.Sprawiedliwość",
+vars_2015 <- c("Frekwencja",
+               "Prawo i Sprawiedliwość" = "KW.Prawo.i.Sprawiedliwość",
                "Platforma Obywatelska" = "KW.Platforma.Obywatelska.RP",
                "Kukiz '15" = "KWW.„Kukiz'15”",
                "Nowoczesna" = "KW.Nowoczesna.Ryszarda.Petru",

@@ -15,10 +15,16 @@ get_from_db <- function(given_level, given_var, con){
                    "wojewodztwa" = "[Kod.wojewodztwo]",
                    "panstwo" = NA)
   
-  all_votes <- "Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów"
+  if (given_var == "Frekwencja"){
+    var1 <- "Liczba.kart.ważnych"
+    var2 <- "Liczba.wyborców.uprawnionych.do.głosowania"
+  } else {
+    var1 <- given_var  
+    var2 <- "Liczba.głosów.ważnych.oddanych.łącznie.na.wszystkie.listy.kandydatów"
+  }
   
-  SELECT_sums <- paste0("SELECT SUM([", given_var, "]),
-                  SUM([", all_votes, "]) ",
+  SELECT_sums <- paste0("SELECT SUM([", var1, "]),
+                   SUM([", var2, "]) ",
                   collapse='')
   
   query <- SELECT_sums
@@ -42,6 +48,7 @@ get_from_db <- function(given_level, given_var, con){
   }
   
   result <- data.frame(dbGetQuery(con, query))
+  
   return(result)
 }
 
@@ -96,7 +103,10 @@ draw_map <- function(map, scores, given_level, min, max, color){
     view <- c(19.27, 52.03, 6)
   }
 
-  scores <- round(scores, 2)
+  scores_text <- round(scores, 2) %>%
+    sapply(function(x) paste0(x, "%", collapse='')) %>%
+    gsub(pattern="NA%", replacement="brak wyniku")
+  
   
   leaflet() %>%
     addTiles() %>%
@@ -104,8 +114,8 @@ draw_map <- function(map, scores, given_level, min, max, color){
     addPolygons(data=map, stroke = TRUE, weight=0.5, color="black", group="Wyświetl granice", fillOpacity = 0) %>%
     addPolygons(data=map, stroke=FALSE, fillOpacity=0, group="Wyświetl etykiety",
                 label = unname(mapply(function(x, y) {
-                  sprintf("%s<br>%s", htmlEscape(x), htmlEscape(y)) %>% paste0("%", collapse='') %>% HTML()
-                  }, map$name, scores, SIMPLIFY = F))) %>%
+                  sprintf("%s<br>%s", htmlEscape(x), htmlEscape(y)) %>% HTML()
+                  }, map$name, scores_text, SIMPLIFY = F))) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3]) %>%
     addLayersControl(overlayGroups=c("Wyświetl granice", "Wyświetl etykiety"), options=layersControlOptions(collapsed=FALSE))
 }
