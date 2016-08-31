@@ -46,7 +46,7 @@ shinyUI(navbarPage("Wybory",
       ), #end sidebarpanel
       
       mainPanel(
-        leafletOutput("map", width="100%", height=600)
+        leafletOutput("map", width="100%", height=800)
       ) #end mainpanel
 
     ) #end sidebar layout

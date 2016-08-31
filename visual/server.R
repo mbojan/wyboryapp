@@ -6,6 +6,7 @@ powiaty <- readRDS("./data/maps/powiaty.rds")
 wojewodztwa <- readRDS("./data/maps/wojewodztwa.rds")
 panstwo <- readRDS("./data/maps/panstwo.rds")
 
+coords_2015 <- readRDS("./data/coords_2015.rds")
 
 shinyServer(function(input, output) {
   
@@ -37,7 +38,7 @@ shinyServer(function(input, output) {
     
     percent_scores <- find_results(given_var, input$given_level, map$code, con)
     
-    draw_map(map, percent_scores, input$given_level, min=input$range[1], max=input$range[2], color)
+    draw_map(map, percent_scores, input$given_level, min=input$range[1], max=input$range[2], color, coords_2015)
     
  })
 })
