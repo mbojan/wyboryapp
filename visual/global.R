@@ -107,15 +107,14 @@ draw_map <- function(map, scores, given_level, min, max, color){
     sapply(function(x) paste0(x, "%", collapse='')) %>%
     gsub(pattern="NA%", replacement="brak wyniku")
   
-  
   leaflet() %>%
-    addTiles() %>%
+    addTiles(group="Wyświetl OpenStreetMap") %>%
     addPolygons(data=map, stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, fillColor=map_colors) %>%
     addPolygons(data=map, stroke = TRUE, weight=0.5, color="black", group="Wyświetl granice", fillOpacity = 0) %>%
-    addPolygons(data=map, stroke=FALSE, fillOpacity=0, group="Wyświetl etykiety",
-                label = unname(mapply(function(x, y) {
-                  sprintf("%s<br>%s", htmlEscape(x), htmlEscape(y)) %>% HTML()
-                  }, map$name, scores_text, SIMPLIFY = F))) %>%
+    addPolygons(data=map, stroke=FALSE, fillOpacity=0,
+                label = unname(mapply(function(x, y)
+                                      {HTML(sprintf("%s<br>%s", htmlEscape(x), htmlEscape(y)))},
+                              map$name, scores_text, SIMPLIFY = F))) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3]) %>%
-    addLayersControl(overlayGroups=c("Wyświetl granice", "Wyświetl etykiety"), options=layersControlOptions(collapsed=FALSE))
+    addLayersControl(overlayGroups=c("Wyświetl granice", "Wyświetl OpenStreetMap"), options=layersControlOptions(collapsed=FALSE))
 }
