@@ -1,0 +1,16 @@
+/* File source: github.com/rstudio/shiny-examples/tree/master/063-superzip-example */
+
+/* If not using map tiles, show a white background */
+.leaflet-container {
+  background-color: white !important;
+}
+
+.outer {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 0;
+}

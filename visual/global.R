@@ -117,9 +117,9 @@ draw_map <- function(map, scores, given_level, min, max, color, coords){
                     map$name, scores_text, SIMPLIFY = F))) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3]) %>%
     addLayersControl(baseGroups = c("OpenStreetMap", "CartoDB"), overlayGroups=c("Wyświetl granice", "Wyświetl komisje"),
-                     options=layersControlOptions(collapsed=FALSE)) %>%
-    addMarkers(label=unname(mapply(function(x, y, z) 
-                    {HTML(sprintf("%s<br>Numer obwodu: %i<br>Nazwa komisji: %s", htmlEscape(x), htmlEscape(y), htmlEscape(z)))},
-                    coords$Gmina, coords$Numer.obwodu, coords$Nazwa.komisji, SIMPLIFY = F)),
-                    lng=coords$x, lat=coords$y, clusterOptions = markerClusterOptions(), group="Wyświetl komisje")
+                     options=layersControlOptions(collapsed=FALSE), position = "bottomleft") #%>%
+    #addMarkers(label=unname(mapply(function(x, y, z) 
+    #                {HTML(sprintf("%s<br>Numer obwodu: %i<br>Nazwa komisji: %s", htmlEscape(x), htmlEscape(y), htmlEscape(z)))},
+    #                coords$Gmina, coords$Numer.obwodu, coords$Nazwa.komisji, SIMPLIFY = F)),
+    #                lng=coords$x, lat=coords$y, clusterOptions = markerClusterOptions(), group="Wyświetl komisje")
 }
