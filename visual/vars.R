@@ -35,5 +35,5 @@ map_levels <- c("Państwo" = "panstwo",
                 "Województwa" = "wojewodztwa",
                 "Powiaty" = "powiaty",
                 "Gminy" = "gminy",
-                "Miasto Warszawa" = "warszawa")
+                "Dzielnice Warszawy" = "warszawa")
 

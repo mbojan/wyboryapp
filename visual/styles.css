@@ -1,4 +1,4 @@
-/* File source: github.com/rstudio/shiny-examples/tree/master/063-superzip-example */
+/* Source: github.com/rstudio/shiny-examples/tree/master/063-superzip-example */
 
 /* If not using map tiles, show a white background */
 .leaflet-container {
@@ -8,9 +8,15 @@
 .outer {
   position: fixed;
   top: 50px;
-  left: 0;
+  left: 320px;
   right: 0;
   bottom: 0;
   overflow: hidden;
   padding: 0;
+}
+
+#controls {
+  /* Appearance */
+  background-color: white;
+  padding: 20px;
 }

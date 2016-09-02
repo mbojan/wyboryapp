@@ -98,9 +98,9 @@ draw_map <- function(map, scores, given_level, min, max, color, coords){
   map_colors[index_else] <- shades[round(scaled_scores[index_else])-min+1]
   
   if (given_level == "warszawa"){
-    view <- c(21.05, 52.24, 10)
+    view <- c(21.05, 52.24, 11)
   } else {
-    view <- c(19.27, 52.03, 6)
+    view <- c(19.27, 52.03, 7)
   }
 
   scores_text <- round(scores, 2) %>%
