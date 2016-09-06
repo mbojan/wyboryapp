@@ -105,6 +105,23 @@ standarize_colnames <- function(dataset){
 
 #************************************************************
 
+convert_to_2015_codes <- function(dataset){
+  
+  #stores correct 2011 codes in new column
+  dataset$TERYT.2011 <- dataset$Kod.terytorialny.gminy
+  
+  #converts codes to 2015 versions
+  dataset$Kod.terytorialny.gminy <- dataset$Kod.terytorialny.gminy %>%
+    gsub(pattern="080910", replacement="086201") %>% #Zielona Gora - rural area became part of the city in 2015 and lost its own code
+    gsub(pattern="022109", replacement="026501") #Walbrzych became a separate 'powiat' and got its own code in 2013
+  
+  dataset$Kod.powiat <- substr(dataset$Kod.terytorialny.gminy, 1, 4)
+  
+  return(dataset)
+}
+
+#************************************************************
+
 process_file_2011 <- function(filename, file_no, con){
   
   Sys.setlocale("LC_CTYPE", "pl_PL.utf8")
@@ -179,6 +196,9 @@ set_up_data_2011 <- function(path, dbpath){
     komisje_wszystkie <- plyr::rbind.fill(komisje_wszystkie, kom)
     cat("Finished processing election results file: ", i, "/41\n", sep="")
   }
+  
+  #workaround for the problem with changes in administrative divisions between 2011 and 2015
+  komisje_wszystkie <- komisje_wszystkie %>% convert_to_2015_codes()
   
   dbWriteTable(con, name="komisje", val=komisje_wszystkie)
   rm(komisje_wszystkie)
