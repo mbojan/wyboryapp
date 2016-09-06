@@ -36,9 +36,11 @@ shinyServer(function(input, output) {
     
     map <- get(input$given_level)
     
-    percent_scores <- find_results(given_var, input$given_level, map$code, con)
+    percent_scores <- reactive({
+      find_results(given_var, input$given_level, map$code, con)
+    })
     
-    draw_map(map, percent_scores, input$given_level, min=input$range[1], max=input$range[2], color, coords_2015)
+    draw_map(map, percent_scores(), input$given_level, min=input$range[1], max=input$range[2], color, coords_2015)
     
  })
 })

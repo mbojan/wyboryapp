@@ -13,8 +13,7 @@ shinyUI(navbarPage("Wybory parlamentarne",
       leafletOutput("map", width="100%", height="100%"),
       
       absolutePanel(
-        id = "controls", fixed = TRUE, draggable = FALSE,
-        left = 0, width = 320, top = 50, height = "auto",
+        id = "controls", fixed = TRUE, left = 0, width = 320, top = 50, height = "auto",
         
         helpText("Wyniki wyborów parlamentarnych 2011 i 2015."),
         
