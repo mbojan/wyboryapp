@@ -6,7 +6,7 @@ library(htmltools)
 
 #************************************************************
 
-get_from_db <- function(given_level, given_var, con){
+get_from_db <- function(given_level, given_var, con, given_year){
 
   level_code <- switch(given_level,
                    "warszawa" = "[Kod.terytorialny.gminy]",
@@ -34,7 +34,7 @@ get_from_db <- function(given_level, given_var, con){
     query <- paste0(query, SELECT_code, collapse = '')
   }
     
-  FROM_table <- paste0(" FROM komisje", collapse = '')
+  FROM_table <- paste0(" FROM komisje", given_year, collapse = '')
   query <- paste0(query, FROM_table, collapse='')
   
   if (given_level == "warszawa"){
@@ -54,9 +54,9 @@ get_from_db <- function(given_level, given_var, con){
 
 #************************************************************
 
-find_results <- function(given_var, given_level, code, con){
+find_results <- function(given_var, given_level, code, con, given_year){
   
-  result_data <- get_from_db(given_level, given_var, con)
+  result_data <- get_from_db(given_level, given_var, con, given_year)
   
   if (given_level == "gminy"){
     #aggregate scores of all Warsaw districts
@@ -117,11 +117,11 @@ draw_map <- function(map, scores, given_level, min, max, color, coords){
                     map$name, scores_text, SIMPLIFY = F))) %>%
     setView(lng = view[1], lat = view[2], zoom = view[3]) %>%
     addLayersControl(baseGroups = c("OpenStreetMap", "CartoDB"), overlayGroups=c("Wyświetl granice", "Wyświetl komisje"),
-                     options=layersControlOptions(collapsed=FALSE)) #%>%
-    # addCircleMarkers(stroke=FALSE, label=unname(mapply(function(x, y, z) 
-    #                 {HTML(sprintf("%s<br>Numer obwodu: %i<br>Nazwa komisji: %s", htmlEscape(x), htmlEscape(y), htmlEscape(z)))},
-    #                 coords$Gmina, coords$Numer.obwodu, coords$Nazwa.komisji, SIMPLIFY = F)),
-    #                 lng=coords$x, lat=coords$y, radius = 5,
-    #                 #clusterOptions = markerClusterOptions(),
-    #                 group="Wyświetl komisje")
+                     options=layersControlOptions(collapsed=FALSE)) %>%
+    addCircleMarkers(label=unname(mapply(function(x, y, z)
+                    {HTML(sprintf("%s<br>Numer obwodu: %i<br>Nazwa komisji: %s", htmlEscape(x), htmlEscape(y), htmlEscape(z)))},
+                    coords$Gmina, coords$Numer.obwodu, coords$Nazwa.komisji, SIMPLIFY = F)),
+                    lng=coords$x, lat=coords$y, stroke = FALSE, radius =2,
+              #      clusterOptions = markerClusterOptions(),
+                    group="Wyświetl komisje")
 }

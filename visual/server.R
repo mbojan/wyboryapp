@@ -10,14 +10,9 @@ coords_2015 <- readRDS("./data/coords_2015.rds")
 
 shinyServer(function(input, output) {
   
-  con_2015 <- dbConnect(SQLite(), "./data/wyniki2015.sqlite3")
-  con_2011 <- dbConnect(SQLite(), "./data/wyniki2011.sqlite3")  
+  con <- dbConnect(SQLite(), "./data/shiny_db.sqlite3")
   
   output$map <- renderLeaflet({
-    
-    con <- switch(input$given_year,
-                  "2015" = con_2015,
-                  "2011" = con_2011)
     
     given_var <- switch(input$given_year,
                   "2015" = input$given_var_2015,
@@ -37,7 +32,7 @@ shinyServer(function(input, output) {
     map <- get(input$given_level)
     
     percent_scores <- reactive({
-      find_results(given_var, input$given_level, map$code, con)
+      find_results(given_var, input$given_level, map$code, con, input$given_year)
     })
     
     draw_map(map, percent_scores(), input$given_level, min=input$range[1], max=input$range[2], color, coords_2015)
