@@ -17,56 +17,63 @@ shinyUI(navbarPage("Wybory parlamentarne",
         
         helpText("Wyniki wyborów parlamentarnych 2011 i 2015."),
         
-        selectInput("given_year",
-                    label = h6(strong("Wybierz rok.")), 
-                    choices = list("2015",
-                                   "2011"),
-                    selected = "2015"
+        selectInput("type",
+                    label=h6(strong("Wybierz rodzaj danych.")),
+                    choices=list("Podział administracyjny (2011 i 2015)" ,
+                                 "Komisje (2015)"),
+                    selected = "Podział administracyjny (2011 i 2015)"
         ),
         
-        conditionalPanel(condition = "input.given_year == '2015' ",
-                         selectInput("given_var_2015",
-                                     label = h6(strong("Wybierz zmienną.")), 
-                                     choices = vars_2015)
-        ),
+        conditionalPanel(condition = "input.type == 'Podział administracyjny (2011 i 2015)' ",
+            
+            selectInput("given_year",
+                        label = h6(strong("Wybierz rok.")), 
+                        choices = list("2015",
+                                       "2011"),
+                        selected = "2015"
+            ),
+            
+            conditionalPanel(condition = "input.given_year == '2015' ",
+                             selectInput("given_var_2015",
+                                         label = h6(strong("Wybierz zmienną.")), 
+                                         choices = vars_2015)
+            ),
+            
+            conditionalPanel(condition = "input.given_year == '2011' ",
+                             selectInput("given_var_2011",
+                                         label = h6(strong("Wybierz zmienną.")), 
+                                         choices = vars_2011)
+            ),
+            
+            selectInput("given_level",
+                        label = h6(strong("Wybierz poziom.")), 
+                        choices = map_levels,
+                        selected = "wojewodztwa"
+            )
+            
+        ), #end of conditional panel
         
-        conditionalPanel(condition = "input.given_year == '2011' ",
-                         selectInput("given_var_2011",
-                                     label = h6(strong("Wybierz zmienną.")), 
-                                     choices = vars_2011)
-        ),
-        
-        selectInput("given_level",
-                    label = h6(strong("Wybierz poziom.")), 
-                    choices = map_levels,
-                    selected = "wojewodztwa"
-        ),
-        
-        sliderInput("range",
-                    label = h6(strong("Przedział wyników w %:")),
-                    min = 0,
-                    max = 100,
-                    step = 0,
-                    value = c(0, 100)
+        checkboxInput("borders",
+                    label = h6(strong("Pokaż granice."))
         )
         
       ) #end absolutePanel
        
     ) #end div "outer"
     
-  ), #end tabpanel
-  
-  tabPanel("blank",
-    sidebarLayout(
-      
-      sidebarPanel(
-        helpText("placeholder")
-      ), #end sidebarpanel
-      
-      mainPanel(
-      ) #end mainpanel
-      
-    ) #end sidebar layout
-    
   ) #end tabpanel
+  
+  # tabPanel("blank",
+  #   sidebarLayout(
+  #     
+  #     sidebarPanel(
+  #       helpText("placeholder")
+  #     ), #end sidebarpanel
+  #     
+  #     mainPanel(
+  #     ) #end mainpanel
+  #     
+  #   ) #end sidebar layout
+  #   
+  # ) #end tabpanel
 ))
